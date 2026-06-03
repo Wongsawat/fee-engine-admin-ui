@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, type RenderOptions } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, type InitialEntry } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthContext, type AuthContextValue } from '@/auth/AuthContext';
 
@@ -22,7 +22,7 @@ function createTestQueryClient() {
 }
 
 interface Options extends Omit<RenderOptions, 'wrapper'> {
-  initialEntries?: string[];
+  initialEntries?: InitialEntry[];
   auth?: Partial<AuthContextValue>;
 }
 
