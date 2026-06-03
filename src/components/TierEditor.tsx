@@ -5,8 +5,11 @@ import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/f
 import { Trash2, Plus } from 'lucide-react';
 
 interface TierEditorProps {
+  // react-hook-form's Control is contravariant in ValidateForm, making
+  // Control<SpecificType> incompatible with Control<any>.  Casting to
+  // Control<Record<string, any>> at the call-site is safe at runtime.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
+  control: Control<Record<string, any>>;
   name: string;
 }
 

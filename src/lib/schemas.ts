@@ -24,12 +24,12 @@ export const tierSchema = z.object({
 );
 
 export const ruleFormSchema = z.object({
-  paymentType: z.enum(PAYMENT_TYPES, { required_error: 'Required' }),
-  scheme: z.enum(PAYMENT_SCHEMES, { required_error: 'Required' }),
-  chargeBearer: z.enum(CHARGE_BEARERS, { required_error: 'Required' }),
+  paymentType: z.enum(PAYMENT_TYPES, { message: 'Required' }),
+  scheme: z.enum(PAYMENT_SCHEMES, { message: 'Required' }),
+  chargeBearer: z.enum(CHARGE_BEARERS, { message: 'Required' }),
   accountIdentification: z.string().optional(),
   chargeType: z.string().min(1, 'Required'),
-  feeType: z.enum(FEE_TYPES, { required_error: 'Required' }),
+  feeType: z.enum(FEE_TYPES, { message: 'Required' }),
   flatAmount: z.string().optional(),
   percentage: z.string().optional(),
   tiers: z.array(tierSchema).optional(),

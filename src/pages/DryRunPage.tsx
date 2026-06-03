@@ -14,60 +14,40 @@ import { TierEditor } from '@/components/TierEditor';
 import { z } from 'zod';
 import {
   ruleFormSchema,
-  accountDtoSchema,
   PAYMENT_TYPES, PAYMENT_SCHEMES, CHARGE_BEARERS, FEE_TYPES,
   type DryRunFormValues,
 } from '@/lib/schemas';
 import { useDryRun } from '@/api/dry-run';
 
-const emptyAccountToUndefined = z.preprocess(
-  (val: unknown) => {
-    if (
-      typeof val === 'object' &&
-      val !== null &&
-      !('schemeName' in val && val.schemeName) &&
-      !('identification' in val && val.identification)
-    ) {
-      return undefined;
-    }
-    return val;
-  },
-  accountDtoSchema.optional(),
-);
+const instructedAmountSchema = z
+  .object({
+    amount: z.string(),
+    currency: z.string(),
+  })
+  .optional();
 
-const instructedAmountSchema = z.preprocess(
-  (val: unknown) => {
-    if (
-      typeof val === 'object' &&
-      val !== null &&
-      !('amount' in val && (val as Record<string, unknown>).amount)
-    ) {
-      return undefined;
-    }
-    return val;
-  },
-  z
-    .object({
-      amount: z.string().min(1, 'Required'),
-      currency: z.string().length(3, 'Must be 3-character ISO code').toUpperCase(),
-    })
-    .optional(),
-);
+const accountInputSchema = z
+  .object({
+    schemeName: z.string(),
+    identification: z.string(),
+  })
+  .optional();
 
-/** Form schema that treats empty account objects as undefined. */
 const formSchema = z.object({
   rule: ruleFormSchema,
   instructedAmount: instructedAmountSchema,
-  debtorAccount: emptyAccountToUndefined,
-  creditorAccount: emptyAccountToUndefined,
+  debtorAccount: accountInputSchema,
+  creditorAccount: accountInputSchema,
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export function DryRunPage() {
   const location = useLocation();
   const preloadedRule = (location.state as { rule?: DryRunFormValues['rule'] } | null)?.rule;
   const dryRun = useDryRun();
 
-  const form = useForm<DryRunFormValues>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       rule: preloadedRule ?? {
@@ -84,12 +64,18 @@ export function DryRunPage() {
   const feeType = form.watch('rule.feeType');
   const instructedAmount = form.watch('instructedAmount');
 
-  function onSubmit(values: DryRunFormValues) {
+  function isEmptyAccount(a: { schemeName: string; identification: string } | undefined) {
+    return !a || (!a.schemeName && !a.identification);
+  }
+
+  function onSubmit(values: FormValues) {
     dryRun.mutate({
       rule: values.rule,
-      instructedAmount: values.instructedAmount,
-      debtorAccount: values.debtorAccount,
-      creditorAccount: values.creditorAccount,
+      instructedAmount: values.instructedAmount?.amount
+        ? values.instructedAmount
+        : undefined,
+      debtorAccount: isEmptyAccount(values.debtorAccount) ? undefined : values.debtorAccount,
+      creditorAccount: isEmptyAccount(values.creditorAccount) ? undefined : values.creditorAccount,
     });
   }
 
@@ -225,7 +211,8 @@ export function DryRunPage() {
               {feeType === 'TIERED' && (
                 <FormItem>
                   <FormLabel>Tiers</FormLabel>
-                  <TierEditor control={form.control} name="rule.tiers" />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <TierEditor control={form.control as any} name="rule.tiers" />
                   <FormMessage />
                 </FormItem>
               )}

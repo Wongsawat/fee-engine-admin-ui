@@ -200,7 +200,8 @@ export function RuleForm({
         {feeType === 'TIERED' && (
           <FormItem>
             <FormLabel>Tiers</FormLabel>
-            <TierEditor control={form.control} name="tiers" />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <TierEditor control={form.control as any} name="tiers" />
             <FormMessage />
           </FormItem>
         )}
