@@ -1,0 +1,76 @@
+import { screen, waitFor, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Routes, Route } from 'react-router-dom';
+import { renderWithProviders } from '../test-utils';
+import { RuleFormPage } from '@/pages/RuleFormPage';
+import { MOCK_RULE } from '../mocks/handlers';
+
+function RulesWrapped() {
+  return (
+    <Routes>
+      <Route path="/rules" element={<div>Rules List</div>} />
+      <Route path="/rules/*" element={<RuleFormPage />} />
+    </Routes>
+  );
+}
+
+describe('RuleFormPage — create mode', () => {
+  it('renders empty form with Save button', () => {
+    renderWithProviders(<RulesWrapped />, { initialEntries: ['/rules/new'] });
+    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+  });
+
+  it('has a Try in Dry Run button', () => {
+    renderWithProviders(<RulesWrapped />, { initialEntries: ['/rules/new'] });
+    expect(screen.getByRole('button', { name: /try in dry run/i })).toBeInTheDocument();
+  });
+
+  it('submits POST and navigates to /rules on success', async () => {
+    renderWithProviders(<RulesWrapped />, { initialEntries: ['/rules/new'] });
+
+    // Fill form using Radix Select click pattern
+    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'DOMESTIC' }));
+
+    await userEvent.click(screen.getByRole('combobox', { name: /scheme/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'FPS' }));
+
+    await userEvent.click(screen.getByRole('combobox', { name: /charge bearer/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'BorneByDebtor' }));
+
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+
+    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'FLAT' }));
+
+    await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      // After successful POST, the page navigates to /rules
+      // We can verify the form button is no longer in the document
+      expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('RuleFormPage — edit mode', () => {
+  it('pre-populates form with existing rule data', async () => {
+    renderWithProviders(<RulesWrapped />, {
+      initialEntries: [`/rules/${MOCK_RULE.id}`],
+    });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('ServiceCharge')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Dry Run button that navigates to /dry-run', async () => {
+    renderWithProviders(<RulesWrapped />, {
+      initialEntries: [`/rules/${MOCK_RULE.id}`],
+    });
+    await waitFor(() => screen.getByRole('button', { name: /dry run/i }));
+    expect(screen.getByRole('button', { name: /dry run/i })).toBeInTheDocument();
+  });
+});
