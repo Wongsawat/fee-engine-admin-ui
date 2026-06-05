@@ -25,6 +25,25 @@ describe('useFeeRules', () => {
     expect(result.current.data?.content).toHaveLength(1);
     expect(result.current.data?.content[0].id).toBe(MOCK_RULE.id);
   });
+
+  it('forwards destinationCountry filter to the API', async () => {
+    let capturedUrl = '';
+    server.use(
+      http.get('/admin/fee-rules', ({ request }) => {
+        capturedUrl = request.url;
+        return HttpResponse.json({
+          content: [],
+          page: { number: 0, size: 20, totalElements: 0, totalPages: 0 },
+        });
+      })
+    );
+    const { result } = renderHook(
+      () => useFeeRules({ destinationCountry: 'GB' }, 0),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(capturedUrl).toContain('destinationCountry=GB');
+  });
 });
 
 describe('useFeeRule', () => {

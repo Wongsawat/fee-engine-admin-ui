@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import {
 import { TierEditor } from './TierEditor';
 import {
   ruleFormSchema, PAYMENT_TYPES, PAYMENT_SCHEMES, CHARGE_BEARERS, FEE_TYPES,
+  INTERNATIONAL_PAYMENT_TYPES,
   type RuleFormValues,
 } from '@/lib/schemas';
 
@@ -42,13 +44,41 @@ export function RuleForm({
       feeType: undefined,
       flatAmount: '',
       percentage: '',
+      minFee: '',
+      maxFee: '',
       tiers: [],
       currency: '',
+      destinationCountry: '',
+      priority: 0,
       ...defaultValues,
     },
   });
 
   const feeType = form.watch('feeType');
+  const paymentType = form.watch('paymentType');
+
+  const prevFeeType = useRef(feeType);
+  useEffect(() => {
+    if (prevFeeType.current === 'PERCENTAGE' && feeType !== 'PERCENTAGE') {
+      form.setValue('minFee', '');
+      form.setValue('maxFee', '');
+    }
+    prevFeeType.current = feeType;
+  }, [feeType, form]);
+
+  const prevPaymentType = useRef(paymentType);
+  useEffect(() => {
+    const wasInternational = (INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(
+      prevPaymentType.current ?? ''
+    );
+    const isInternational = (INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(
+      paymentType ?? ''
+    );
+    if (wasInternational && !isInternational) {
+      form.setValue('destinationCountry', '');
+    }
+    prevPaymentType.current = paymentType;
+  }, [paymentType, form]);
 
   return (
     <Form {...form}>
@@ -130,6 +160,28 @@ export function RuleForm({
           )}
         />
 
+        {(INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(paymentType ?? '') && (
+          <FormField
+            control={form.control}
+            name="destinationCountry"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Destination Country (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    aria-label="Destination Country"
+                    placeholder="e.g. IN"
+                    maxLength={2}
+                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="chargeType"
@@ -182,19 +234,52 @@ export function RuleForm({
         )}
 
         {feeType === 'PERCENTAGE' && (
-          <FormField
-            control={form.control}
-            name="percentage"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Percentage</FormLabel>
-                <FormControl>
-                  <Input {...field} aria-label="Percentage" placeholder="0.00" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <>
+            <FormField
+              control={form.control}
+              name="percentage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Percentage</FormLabel>
+                  <FormControl>
+                    <Input {...field} aria-label="Percentage" placeholder="0.00" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="rounded-md border p-3 space-y-2">
+              <p className="text-sm font-medium">Fee Bounds (optional)</p>
+              <div className="flex gap-3">
+                <FormField
+                  control={form.control}
+                  name="minFee"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>Min Fee</FormLabel>
+                      <FormControl>
+                        <Input {...field} aria-label="Min Fee" placeholder="1.00" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="maxFee"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormLabel>Max Fee</FormLabel>
+                      <FormControl>
+                        <Input {...field} aria-label="Max Fee" placeholder="50.00" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </>
         )}
 
         {feeType === 'TIERED' && (
@@ -214,6 +299,27 @@ export function RuleForm({
               <FormLabel>Currency</FormLabel>
               <FormControl>
                 <Input {...field} aria-label="Currency" placeholder="GBP" maxLength={3} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Priority</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  min={0}
+                  step={1}
+                  aria-label="Priority"
+                  onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

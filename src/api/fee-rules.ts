@@ -20,6 +20,7 @@ function buildListUrl(filters: FeeRuleFilters, page: number, size = 20): string 
   if (filters.feeType) params.set('feeType', filters.feeType);
   if (filters.currency) params.set('currency', filters.currency);
   if (filters.accountIdentification) params.set('accountIdentification', filters.accountIdentification);
+  if (filters.destinationCountry) params.set('destinationCountry', filters.destinationCountry);
   if (filters.active !== undefined) params.set('active', String(filters.active));
   return `/admin/fee-rules?${params}`;
 }

@@ -96,6 +96,15 @@ export function FilterBar() {
         onChange={(e) => set('currency', e.target.value.toUpperCase())}
       />
 
+      <Input
+        className="w-20"
+        aria-label="Filter by Destination Country"
+        placeholder="Country"
+        maxLength={2}
+        value={params.get('destinationCountry') ?? ''}
+        onChange={(e) => set('destinationCountry', e.target.value.toUpperCase())}
+      />
+
       <Button variant="ghost" size="sm" onClick={clear}>
         Clear
       </Button>
@@ -110,6 +119,7 @@ export function filtersFromParams(params: URLSearchParams): FeeRuleFilters {
     chargeBearer: toParam(params.get('chargeBearer') ?? undefined),
     feeType: toParam(params.get('feeType') ?? undefined),
     currency: toParam(params.get('currency') ?? undefined),
+    destinationCountry: toParam(params.get('destinationCountry') ?? undefined),
     active: params.has('active')
       ? params.get('active') === 'true'
       : undefined,

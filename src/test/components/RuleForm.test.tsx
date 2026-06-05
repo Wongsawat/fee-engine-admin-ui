@@ -2,7 +2,7 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils';
 import { RuleForm } from '@/components/RuleForm';
-import type { RuleFormValues } from '@/lib/schemas';
+import { ruleFormSchema, type RuleFormValues } from '@/lib/schemas';
 
 const noop = vi.fn();
 
@@ -83,5 +83,227 @@ describe('RuleForm validation', () => {
     const values: RuleFormValues = noop.mock.calls[0][0];
     expect(values.feeType).toBe('FLAT');
     expect(values.flatAmount).toBe('1.50');
+  });
+});
+
+describe('RuleForm — fee bounds', () => {
+  beforeEach(() => noop.mockReset());
+
+  it('does not show fee bounds section when feeType is not PERCENTAGE', () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    expect(screen.queryByText(/fee bounds/i)).not.toBeInTheDocument();
+  });
+
+  it('shows fee bounds section when feeType is PERCENTAGE', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    expect(screen.getByText(/fee bounds/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/min fee/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/max fee/i)).toBeInTheDocument();
+  });
+
+  it('hides fee bounds section when feeType changes from PERCENTAGE to FLAT', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    expect(screen.getByText(/fee bounds/i)).toBeInTheDocument();
+    await selectOption(/fee type/i, 'FLAT');
+    expect(screen.queryByText(/fee bounds/i)).not.toBeInTheDocument();
+  });
+
+  it('clears minFee and maxFee values when switching away from PERCENTAGE', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    await userEvent.type(screen.getByLabelText(/min fee/i), '5.00');
+    await selectOption(/fee type/i, 'FLAT');
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    expect(screen.getByLabelText(/min fee/i)).toHaveValue('');
+  });
+
+  it('shows error when minFee is non-positive', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    await selectOption(/scheme/i, 'FPS');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    await userEvent.type(screen.getByLabelText(/percentage/i), '0.50');
+    await userEvent.type(screen.getByLabelText(/min fee/i), '0');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Must be greater than 0')).toBeInTheDocument();
+    });
+    expect(noop).not.toHaveBeenCalled();
+  });
+
+  it('shows error when minFee is greater than maxFee', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    await selectOption(/scheme/i, 'FPS');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    await userEvent.type(screen.getByLabelText(/percentage/i), '0.50');
+    await userEvent.type(screen.getByLabelText(/min fee/i), '50.00');
+    await userEvent.type(screen.getByLabelText(/max fee/i), '10.00');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Max must be greater than or equal to min')).toBeInTheDocument();
+    });
+    expect(noop).not.toHaveBeenCalled();
+  });
+
+  it('rejects caps on non-PERCENTAGE rule at schema level', () => {
+    const result = ruleFormSchema.safeParse({
+      paymentType: 'DOMESTIC',
+      scheme: 'FPS',
+      chargeBearer: 'BorneByDebtor',
+      chargeType: 'ServiceCharge',
+      feeType: 'FLAT',
+      flatAmount: '1.50',
+      currency: 'GBP',
+      minFee: '1.00',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const paths = result.error.issues.map((i) => i.path.join('.'));
+      expect(paths).toContain('minFee');
+    }
+  });
+
+  it('emits only one error per cap field when caps are invalid on non-PERCENTAGE', () => {
+    const result = ruleFormSchema.safeParse({
+      paymentType: 'DOMESTIC',
+      scheme: 'FPS',
+      chargeBearer: 'BorneByDebtor',
+      chargeType: 'ServiceCharge',
+      feeType: 'FLAT',
+      flatAmount: '1.50',
+      currency: 'GBP',
+      minFee: 'abc',
+      maxFee: '-5',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const minFeeIssues = result.error.issues.filter((i) => i.path.includes('minFee'));
+      const maxFeeIssues = result.error.issues.filter((i) => i.path.includes('maxFee'));
+      expect(minFeeIssues).toHaveLength(1);
+      expect(maxFeeIssues).toHaveLength(1);
+      expect(minFeeIssues[0].message).toBe('Caps only allowed on PERCENTAGE fee type');
+      expect(maxFeeIssues[0].message).toBe('Caps only allowed on PERCENTAGE fee type');
+    }
+  });
+});
+
+describe('RuleForm — destination country', () => {
+  beforeEach(() => noop.mockReset());
+
+  it('does not show destination country field for domestic payment type', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    expect(screen.queryByLabelText(/destination country/i)).not.toBeInTheDocument();
+  });
+
+  it('shows destination country field when payment type is INTERNATIONAL', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('shows destination country field when payment type is INTERNATIONAL_SCHEDULED', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL_SCHEDULED');
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('shows destination country field when payment type is INTERNATIONAL_STANDING_ORDER', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL_STANDING_ORDER');
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('clears destination country and hides field when switching from INTERNATIONAL to DOMESTIC', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    await userEvent.type(screen.getByLabelText(/destination country/i), 'IN');
+    await selectOption(/payment type/i, 'DOMESTIC');
+    expect(screen.queryByLabelText(/destination country/i)).not.toBeInTheDocument();
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    expect(screen.getByLabelText(/destination country/i)).toHaveValue('');
+  });
+
+  it('shows error for invalid country code format (non-alpha)', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    await selectOption(/scheme/i, 'SWIFT');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'FLAT');
+    await userEvent.type(screen.getByLabelText(/flat amount/i), '5.00');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await userEvent.type(screen.getByLabelText(/destination country/i), 'g1');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Must be a 2-letter uppercase country code (e.g. GB)')).toBeInTheDocument();
+    });
+    expect(noop).not.toHaveBeenCalled();
+  });
+
+  it('auto-uppercases destination country input', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    const input = screen.getByLabelText(/destination country/i);
+    await userEvent.type(input, 'in');
+    expect(input).toHaveValue('IN');
+  });
+});
+
+describe('RuleForm — priority', () => {
+  beforeEach(() => noop.mockReset());
+
+  it('renders priority field with default value 0', () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    const input = screen.getByLabelText(/priority/i);
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveValue(0);
+  });
+
+  it('shows error when priority is negative', async () => {
+    // Test at schema level that negative priority fails
+    const result = ruleFormSchema.safeParse({
+      paymentType: 'DOMESTIC',
+      scheme: 'FPS',
+      chargeBearer: 'BorneByDebtor',
+      chargeType: 'ServiceCharge',
+      feeType: 'FLAT',
+      flatAmount: '1.50',
+      currency: 'GBP',
+      priority: -1,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const priorityIssue = result.error.issues.find(i => i.path.includes('priority'));
+      expect(priorityIssue).toBeDefined();
+      expect(priorityIssue!.message.toLowerCase()).toMatch(/too small|>=\s*0/);
+    }
+  });
+
+  it('includes priority in submitted values', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    await selectOption(/scheme/i, 'FPS');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'FLAT');
+    await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    const priorityInput = screen.getByLabelText(/priority/i);
+    await userEvent.clear(priorityInput);
+    await userEvent.type(priorityInput, '5');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(noop).toHaveBeenCalledTimes(1));
+    const values: RuleFormValues = noop.mock.calls[0][0];
+    expect(values.priority).toBe(5);
   });
 });

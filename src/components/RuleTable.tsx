@@ -29,6 +29,8 @@ export function RuleTable({ data, page, onPageChange }: RuleTableProps) {
               <TableHead>Fee Type</TableHead>
               <TableHead>Currency</TableHead>
               <TableHead>Account</TableHead>
+              <TableHead>Country</TableHead>
+              <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -37,7 +39,7 @@ export function RuleTable({ data, page, onPageChange }: RuleTableProps) {
           <TableBody>
             {data.content.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                   No fee rules found
                 </TableCell>
               </TableRow>
@@ -50,6 +52,8 @@ export function RuleTable({ data, page, onPageChange }: RuleTableProps) {
                   <TableCell>{rule.feeType}</TableCell>
                   <TableCell>{rule.currency}</TableCell>
                   <TableCell>{rule.accountIdentification ?? '—'}</TableCell>
+                  <TableCell>{rule.destinationCountry ?? '—'}</TableCell>
+                  <TableCell>{rule.priority}</TableCell>
                   <TableCell><StatusBadge active={rule.active} /></TableCell>
                   <TableCell>{new Date(rule.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right space-x-1">

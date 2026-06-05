@@ -11,14 +11,18 @@ export const MOCK_RULE: FeeRuleResponse = {
   feeType: 'FLAT',
   flatAmount: '1.50',
   percentage: undefined,
+  minFee: undefined,
+  maxFee: undefined,
   tiers: [],
   currency: 'GBP',
+  destinationCountry: undefined,
   active: true,
   version: 0,
   createdAt: '2026-06-01T10:00:00Z',
   createdBy: 'admin',
   updatedAt: '2026-06-01T10:00:00Z',
   updatedBy: 'admin',
+  priority: 0,
 };
 
 const BASE = '/admin/fee-rules';

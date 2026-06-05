@@ -33,8 +33,12 @@ export interface FeeRuleResponse {
   feeType: FeeType;
   flatAmount?: string;
   percentage?: string;
+  minFee?: string;
+  maxFee?: string;
   tiers: Tier[];
   currency: string;
+  destinationCountry?: string;
+  priority: number;
   active: boolean;
   version: number;
   createdAt: string;
@@ -62,8 +66,12 @@ export interface CreateFeeRuleRequest {
   feeType: FeeType;
   flatAmount?: string;
   percentage?: string;
+  minFee?: string;
+  maxFee?: string;
   tiers?: Tier[];
   currency: string;
+  destinationCountry?: string;
+  priority?: number;
 }
 
 export interface UpdateFeeRuleRequest extends CreateFeeRuleRequest {
@@ -82,6 +90,7 @@ export interface FeeRuleFilters {
   feeType?: string;
   currency?: string;
   accountIdentification?: string;
+  destinationCountry?: string;
   active?: boolean;
 }
 

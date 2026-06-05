@@ -15,6 +15,7 @@ import { z } from 'zod';
 import {
   ruleFormSchema,
   PAYMENT_TYPES, PAYMENT_SCHEMES, CHARGE_BEARERS, FEE_TYPES,
+  INTERNATIONAL_PAYMENT_TYPES,
   type DryRunFormValues,
 } from '@/lib/schemas';
 import { useDryRun } from '@/api/dry-run';
@@ -53,7 +54,8 @@ export function DryRunPage() {
       rule: preloadedRule ?? {
         paymentType: undefined, scheme: undefined, chargeBearer: undefined,
         accountIdentification: '', chargeType: '', feeType: undefined,
-        flatAmount: '', percentage: '', tiers: [], currency: '',
+        flatAmount: '', percentage: '', minFee: '', maxFee: '', tiers: [],
+        currency: '', destinationCountry: '', priority: 0,
       },
       instructedAmount: { amount: '', currency: '' },
       debtorAccount: { schemeName: '', identification: '' },
@@ -62,6 +64,7 @@ export function DryRunPage() {
   });
 
   const feeType = form.watch('rule.feeType');
+  const paymentType = form.watch('rule.paymentType');
   const instructedAmount = form.watch('instructedAmount');
 
   function isEmptyAccount(a: { schemeName: string; identification: string } | undefined) {
@@ -149,6 +152,26 @@ export function DryRunPage() {
                 )}
               />
 
+              {(INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(paymentType ?? '') && (
+                <FormField control={form.control} name="rule.destinationCountry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Destination Country (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          aria-label="Destination Country"
+                          placeholder="e.g. IN"
+                          maxLength={2}
+                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField control={form.control} name="rule.chargeType"
                 render={({ field }) => (
                   <FormItem>
@@ -195,17 +218,46 @@ export function DryRunPage() {
               )}
 
               {feeType === 'PERCENTAGE' && (
-                <FormField control={form.control} name="rule.percentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Percentage</FormLabel>
-                      <FormControl>
-                        <Input {...field} aria-label="Percentage" placeholder="0.00" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField control={form.control} name="rule.percentage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Percentage</FormLabel>
+                        <FormControl>
+                          <Input {...field} aria-label="Percentage" placeholder="0.00" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="rounded-md border p-3 space-y-2">
+                    <p className="text-sm font-medium">Fee Bounds (optional)</p>
+                    <div className="flex gap-3">
+                      <FormField control={form.control} name="rule.minFee"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel>Min Fee</FormLabel>
+                            <FormControl>
+                              <Input {...field} aria-label="Min Fee" placeholder="1.00" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField control={form.control} name="rule.maxFee"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel>Max Fee</FormLabel>
+                            <FormControl>
+                              <Input {...field} aria-label="Max Fee" placeholder="50.00" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               {feeType === 'TIERED' && (
@@ -223,6 +275,25 @@ export function DryRunPage() {
                     <FormLabel>Currency</FormLabel>
                     <FormControl>
                       <Input {...field} aria-label="Currency" placeholder="GBP" maxLength={3} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField control={form.control} name="rule.priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        step={1}
+                        aria-label="Priority"
+                        onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -6,6 +6,10 @@ export const PAYMENT_TYPES = [
   'INTERNATIONAL_SCHEDULED', 'INTERNATIONAL_STANDING_ORDER',
 ] as const;
 
+export const INTERNATIONAL_PAYMENT_TYPES = [
+  'INTERNATIONAL', 'INTERNATIONAL_SCHEDULED', 'INTERNATIONAL_STANDING_ORDER',
+] as const;
+
 export const PAYMENT_SCHEMES = ['FPS', 'BACS', 'CHAPS', 'SWIFT'] as const;
 
 export const CHARGE_BEARERS = [
@@ -32,12 +36,16 @@ export const ruleFormSchema = z.object({
   feeType: z.enum(FEE_TYPES, { message: 'Required' }),
   flatAmount: z.string().optional(),
   percentage: z.string().optional(),
+  minFee: z.string().optional(),
+  maxFee: z.string().optional(),
   tiers: z.array(tierSchema).optional(),
   currency: z
     .string()
     .min(1, 'Required')
     .length(3, 'Must be 3-character ISO 4217 currency code')
     .toUpperCase(),
+  destinationCountry: z.string().optional(),
+  priority: z.number().int().min(0).optional(),
 }).superRefine((data, ctx) => {
   if (data.feeType === 'FLAT' && !data.flatAmount) {
     ctx.addIssue({
@@ -82,6 +90,61 @@ export const ruleFormSchema = z.object({
         path: ['tiers'],
       });
     }
+  }
+  if (data.feeType !== 'PERCENTAGE') {
+    if (data.minFee) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Caps only allowed on PERCENTAGE fee type',
+        path: ['minFee'],
+      });
+    }
+    if (data.maxFee) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Caps only allowed on PERCENTAGE fee type',
+        path: ['maxFee'],
+      });
+    }
+  } else {
+    if (data.minFee && Number(data.minFee) <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Must be greater than 0',
+        path: ['minFee'],
+      });
+    }
+    if (data.maxFee && Number(data.maxFee) <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Must be greater than 0',
+        path: ['maxFee'],
+      });
+    }
+    if (data.minFee && data.maxFee && Number(data.minFee) > Number(data.maxFee)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Max must be greater than or equal to min',
+        path: ['maxFee'],
+      });
+    }
+  }
+  if (data.destinationCountry && !/^[A-Z]{2}$/.test(data.destinationCountry)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Must be a 2-letter uppercase country code (e.g. GB)',
+      path: ['destinationCountry'],
+    });
+  }
+  if (
+    data.destinationCountry &&
+    !(INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(data.paymentType)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Destination country only allowed for international payment types',
+      path: ['destinationCountry'],
+    });
   }
 });
 

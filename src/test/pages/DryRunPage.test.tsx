@@ -70,4 +70,43 @@ describe('DryRunPage', () => {
       expect(screen.getByDisplayValue('ServiceCharge')).toBeInTheDocument();
     });
   });
+
+  it('renders priority field with default value 0', () => {
+    renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
+    const priority = screen.getByLabelText(/^priority$/i);
+    expect(priority).toBeInTheDocument();
+    expect(priority).toHaveValue(0);
+  });
+
+  it('does not show destination country field for DOMESTIC payment type', async () => {
+    renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
+    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'DOMESTIC' }));
+    expect(screen.queryByLabelText(/destination country/i)).not.toBeInTheDocument();
+  });
+
+  it('shows destination country field for INTERNATIONAL payment type', async () => {
+    renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
+    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'INTERNATIONAL' }));
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('does not show fee bounds section for FLAT fee type', async () => {
+    renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
+    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'FLAT' }));
+    expect(screen.queryByText(/fee bounds/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/min fee/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/max fee/i)).not.toBeInTheDocument();
+  });
+
+  it('shows fee bounds section for PERCENTAGE fee type', async () => {
+    renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
+    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await userEvent.click(screen.getByRole('option', { name: 'PERCENTAGE' }));
+    expect(screen.getByText(/fee bounds/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/min fee/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/max fee/i)).toBeInTheDocument();
+  });
 });

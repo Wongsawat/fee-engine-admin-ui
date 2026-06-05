@@ -1,9 +1,11 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router-dom';
+import { http, HttpResponse } from 'msw';
 import { renderWithProviders } from '../test-utils';
 import { RuleFormPage } from '@/pages/RuleFormPage';
 import { MOCK_RULE } from '../mocks/handlers';
+import { server } from '../mocks/server';
 
 function RulesWrapped() {
   return (
@@ -72,5 +74,19 @@ describe('RuleFormPage — edit mode', () => {
     });
     await waitFor(() => screen.getByRole('button', { name: /dry run/i }));
     expect(screen.getByRole('button', { name: /dry run/i })).toBeInTheDocument();
+  });
+
+  it('pre-populates priority from existing rule', async () => {
+    server.use(
+      http.get(`/admin/fee-rules/${MOCK_RULE.id}`, () =>
+        HttpResponse.json({ ...MOCK_RULE, priority: 7 })
+      )
+    );
+    renderWithProviders(<RulesWrapped />, {
+      initialEntries: [`/rules/${MOCK_RULE.id}`],
+    });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('7')).toBeInTheDocument();
+    });
   });
 });
