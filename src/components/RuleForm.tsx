@@ -12,6 +12,7 @@ import {
 import { TierEditor } from './TierEditor';
 import {
   ruleFormSchema, PAYMENT_TYPES, PAYMENT_SCHEMES, CHARGE_BEARERS, FEE_TYPES,
+  INTERNATIONAL_PAYMENT_TYPES,
   type RuleFormValues,
 } from '@/lib/schemas';
 
@@ -54,6 +55,7 @@ export function RuleForm({
   });
 
   const feeType = form.watch('feeType');
+  const paymentType = form.watch('paymentType');
 
   const prevFeeType = useRef(feeType);
   useEffect(() => {
@@ -63,6 +65,20 @@ export function RuleForm({
     }
     prevFeeType.current = feeType;
   }, [feeType, form]);
+
+  const prevPaymentType = useRef(paymentType);
+  useEffect(() => {
+    const wasInternational = (INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(
+      prevPaymentType.current ?? ''
+    );
+    const isInternational = (INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(
+      paymentType ?? ''
+    );
+    if (wasInternational && !isInternational) {
+      form.setValue('destinationCountry', '');
+    }
+    prevPaymentType.current = paymentType;
+  }, [paymentType, form]);
 
   return (
     <Form {...form}>
@@ -143,6 +159,28 @@ export function RuleForm({
             </FormItem>
           )}
         />
+
+        {(INTERNATIONAL_PAYMENT_TYPES as readonly string[]).includes(paymentType ?? '') && (
+          <FormField
+            control={form.control}
+            name="destinationCountry"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Destination Country (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    aria-label="Destination Country"
+                    placeholder="e.g. IN"
+                    maxLength={2}
+                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

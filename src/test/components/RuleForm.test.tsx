@@ -172,3 +172,66 @@ describe('RuleForm — fee bounds', () => {
     }
   });
 });
+
+describe('RuleForm — destination country', () => {
+  beforeEach(() => noop.mockReset());
+
+  it('does not show destination country field for domestic payment type', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    expect(screen.queryByLabelText(/destination country/i)).not.toBeInTheDocument();
+  });
+
+  it('shows destination country field when payment type is INTERNATIONAL', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('shows destination country field when payment type is INTERNATIONAL_SCHEDULED', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL_SCHEDULED');
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('shows destination country field when payment type is INTERNATIONAL_STANDING_ORDER', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL_STANDING_ORDER');
+    expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
+  });
+
+  it('clears destination country and hides field when switching from INTERNATIONAL to DOMESTIC', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    await userEvent.type(screen.getByLabelText(/destination country/i), 'IN');
+    await selectOption(/payment type/i, 'DOMESTIC');
+    expect(screen.queryByLabelText(/destination country/i)).not.toBeInTheDocument();
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    expect(screen.getByLabelText(/destination country/i)).toHaveValue('');
+  });
+
+  it('shows error for invalid country code format (non-alpha)', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    await selectOption(/scheme/i, 'SWIFT');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'FLAT');
+    await userEvent.type(screen.getByLabelText(/flat amount/i), '5.00');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await userEvent.type(screen.getByLabelText(/destination country/i), 'g1');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Must be a 2-letter uppercase country code (e.g. GB)')).toBeInTheDocument();
+    });
+    expect(noop).not.toHaveBeenCalled();
+  });
+
+  it('auto-uppercases destination country input', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'INTERNATIONAL');
+    const input = screen.getByLabelText(/destination country/i);
+    await userEvent.type(input, 'in');
+    expect(input).toHaveValue('IN');
+  });
+});
