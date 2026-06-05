@@ -19,6 +19,7 @@ export const MOCK_RULE: FeeRuleResponse = {
   createdBy: 'admin',
   updatedAt: '2026-06-01T10:00:00Z',
   updatedBy: 'admin',
+  priority: 0,
 };
 
 const BASE = '/admin/fee-rules';
