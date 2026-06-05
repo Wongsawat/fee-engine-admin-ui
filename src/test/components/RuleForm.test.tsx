@@ -235,3 +235,52 @@ describe('RuleForm — destination country', () => {
     expect(input).toHaveValue('IN');
   });
 });
+
+describe('RuleForm — priority', () => {
+  beforeEach(() => noop.mockReset());
+
+  it('renders priority field with default value 0', () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    const input = screen.getByLabelText(/priority/i);
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveValue(0);
+  });
+
+  it('shows error when priority is negative', async () => {
+    // Test at schema level that negative priority fails
+    const result = ruleFormSchema.safeParse({
+      paymentType: 'DOMESTIC',
+      scheme: 'FPS',
+      chargeBearer: 'BorneByDebtor',
+      chargeType: 'ServiceCharge',
+      feeType: 'FLAT',
+      flatAmount: '1.50',
+      currency: 'GBP',
+      priority: -1,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const priorityIssue = result.error.issues.find(i => i.path.includes('priority'));
+      expect(priorityIssue).toBeDefined();
+      expect(priorityIssue!.message.toLowerCase()).toMatch(/too small|>=\s*0/);
+    }
+  });
+
+  it('includes priority in submitted values', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    await selectOption(/scheme/i, 'FPS');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'FLAT');
+    await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    const priorityInput = screen.getByLabelText(/priority/i);
+    await userEvent.clear(priorityInput);
+    await userEvent.type(priorityInput, '5');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(noop).toHaveBeenCalledTimes(1));
+    const values: RuleFormValues = noop.mock.calls[0][0];
+    expect(values.priority).toBe(5);
+  });
+});
