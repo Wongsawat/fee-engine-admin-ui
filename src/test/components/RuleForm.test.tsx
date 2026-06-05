@@ -2,7 +2,7 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils';
 import { RuleForm } from '@/components/RuleForm';
-import type { RuleFormValues } from '@/lib/schemas';
+import { ruleFormSchema, type RuleFormValues } from '@/lib/schemas';
 
 const noop = vi.fn();
 
@@ -83,5 +83,92 @@ describe('RuleForm validation', () => {
     const values: RuleFormValues = noop.mock.calls[0][0];
     expect(values.feeType).toBe('FLAT');
     expect(values.flatAmount).toBe('1.50');
+  });
+});
+
+describe('RuleForm — fee bounds', () => {
+  beforeEach(() => noop.mockReset());
+
+  it('does not show fee bounds section when feeType is not PERCENTAGE', () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    expect(screen.queryByText(/fee bounds/i)).not.toBeInTheDocument();
+  });
+
+  it('shows fee bounds section when feeType is PERCENTAGE', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    expect(screen.getByText(/fee bounds/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/min fee/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/max fee/i)).toBeInTheDocument();
+  });
+
+  it('hides fee bounds section when feeType changes from PERCENTAGE to FLAT', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    expect(screen.getByText(/fee bounds/i)).toBeInTheDocument();
+    await selectOption(/fee type/i, 'FLAT');
+    expect(screen.queryByText(/fee bounds/i)).not.toBeInTheDocument();
+  });
+
+  it('clears minFee and maxFee values when switching away from PERCENTAGE', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    await userEvent.type(screen.getByLabelText(/min fee/i), '5.00');
+    await selectOption(/fee type/i, 'FLAT');
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    expect(screen.getByLabelText(/min fee/i)).toHaveValue('');
+  });
+
+  it('shows error when minFee is non-positive', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    await selectOption(/scheme/i, 'FPS');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    await userEvent.type(screen.getByLabelText(/percentage/i), '0.50');
+    await userEvent.type(screen.getByLabelText(/min fee/i), '0');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Must be greater than 0')).toBeInTheDocument();
+    });
+    expect(noop).not.toHaveBeenCalled();
+  });
+
+  it('shows error when minFee is greater than maxFee', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/payment type/i, 'DOMESTIC');
+    await selectOption(/scheme/i, 'FPS');
+    await selectOption(/charge bearer/i, 'BorneByDebtor');
+    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await selectOption(/fee type/i, 'PERCENTAGE');
+    await userEvent.type(screen.getByLabelText(/percentage/i), '0.50');
+    await userEvent.type(screen.getByLabelText(/min fee/i), '50.00');
+    await userEvent.type(screen.getByLabelText(/max fee/i), '10.00');
+    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Max must be greater than or equal to min')).toBeInTheDocument();
+    });
+    expect(noop).not.toHaveBeenCalled();
+  });
+
+  it('rejects caps on non-PERCENTAGE rule at schema level', () => {
+    const result = ruleFormSchema.safeParse({
+      paymentType: 'DOMESTIC',
+      scheme: 'FPS',
+      chargeBearer: 'BorneByDebtor',
+      chargeType: 'ServiceCharge',
+      feeType: 'FLAT',
+      flatAmount: '1.50',
+      currency: 'GBP',
+      minFee: '1.00',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const paths = result.error.issues.map((i) => i.path.join('.'));
+      expect(paths).toContain('minFee');
+    }
   });
 });
