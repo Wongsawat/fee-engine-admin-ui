@@ -55,7 +55,7 @@ export function DryRunPage() {
         accountIdentification: '', chargeType: '', feeType: undefined,
         flatAmount: '', percentage: '', tiers: [], currency: '',
       },
-      instructedAmount: undefined,
+      instructedAmount: { amount: '', currency: '' },
       debtorAccount: { schemeName: '', identification: '' },
       creditorAccount: { schemeName: '', identification: '' },
     },
@@ -96,7 +96,7 @@ export function DryRunPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Payment Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger aria-label="Payment Type">
                           <SelectValue placeholder="Select…" />
@@ -115,7 +115,7 @@ export function DryRunPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Scheme</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger aria-label="Scheme">
                           <SelectValue placeholder="Select…" />
@@ -134,7 +134,7 @@ export function DryRunPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Charge Bearer</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger aria-label="Charge Bearer">
                           <SelectValue placeholder="Select…" />
@@ -165,7 +165,7 @@ export function DryRunPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fee Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger aria-label="Fee Type">
                           <SelectValue placeholder="Select…" />

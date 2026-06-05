@@ -78,7 +78,7 @@ describe('RuleForm validation', () => {
     await selectOption(/fee type/i, 'FLAT');
     await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
     await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
     await waitFor(() => expect(noop).toHaveBeenCalledTimes(1));
     const values: RuleFormValues = noop.mock.calls[0][0];
     expect(values.feeType).toBe('FLAT');

@@ -28,10 +28,12 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('useAuth', () => {
-  it('starts in loading state', () => {
+  it('starts in loading state', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isAuthenticated).toBe(false);
+    // Drain the already-resolved keycloak.init() microtask so it doesn't leak into subsequent tests
+    await act(async () => {});
   });
 
   it('becomes authenticated after Keycloak init resolves', async () => {

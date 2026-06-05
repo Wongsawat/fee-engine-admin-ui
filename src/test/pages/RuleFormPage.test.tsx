@@ -1,4 +1,4 @@
-import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route } from 'react-router-dom';
 import { renderWithProviders } from '../test-utils';
@@ -46,7 +46,7 @@ describe('RuleFormPage — create mode', () => {
     await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
     await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
       // After successful POST, the page navigates to /rules
