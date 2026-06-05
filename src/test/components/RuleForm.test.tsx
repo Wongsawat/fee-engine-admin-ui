@@ -171,6 +171,29 @@ describe('RuleForm — fee bounds', () => {
       expect(paths).toContain('minFee');
     }
   });
+
+  it('emits only one error per cap field when caps are invalid on non-PERCENTAGE', () => {
+    const result = ruleFormSchema.safeParse({
+      paymentType: 'DOMESTIC',
+      scheme: 'FPS',
+      chargeBearer: 'BorneByDebtor',
+      chargeType: 'ServiceCharge',
+      feeType: 'FLAT',
+      flatAmount: '1.50',
+      currency: 'GBP',
+      minFee: 'abc',
+      maxFee: '-5',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const minFeeIssues = result.error.issues.filter((i) => i.path.includes('minFee'));
+      const maxFeeIssues = result.error.issues.filter((i) => i.path.includes('maxFee'));
+      expect(minFeeIssues).toHaveLength(1);
+      expect(maxFeeIssues).toHaveLength(1);
+      expect(minFeeIssues[0].message).toBe('Caps only allowed on PERCENTAGE fee type');
+      expect(maxFeeIssues[0].message).toBe('Caps only allowed on PERCENTAGE fee type');
+    }
+  });
 });
 
 describe('RuleForm — destination country', () => {

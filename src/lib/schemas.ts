@@ -106,27 +106,28 @@ export const ruleFormSchema = z.object({
         path: ['maxFee'],
       });
     }
-  }
-  if (data.minFee && Number(data.minFee) <= 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Must be greater than 0',
-      path: ['minFee'],
-    });
-  }
-  if (data.maxFee && Number(data.maxFee) <= 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Must be greater than 0',
-      path: ['maxFee'],
-    });
-  }
-  if (data.minFee && data.maxFee && Number(data.minFee) > Number(data.maxFee)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Max must be greater than or equal to min',
-      path: ['maxFee'],
-    });
+  } else {
+    if (data.minFee && Number(data.minFee) <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Must be greater than 0',
+        path: ['minFee'],
+      });
+    }
+    if (data.maxFee && Number(data.maxFee) <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Must be greater than 0',
+        path: ['maxFee'],
+      });
+    }
+    if (data.minFee && data.maxFee && Number(data.minFee) > Number(data.maxFee)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Max must be greater than or equal to min',
+        path: ['maxFee'],
+      });
+    }
   }
   if (data.destinationCountry && !/^[A-Z]{2}$/.test(data.destinationCountry)) {
     ctx.addIssue({
