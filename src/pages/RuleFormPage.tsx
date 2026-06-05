@@ -55,8 +55,12 @@ export function RuleFormPage() {
         feeType: existing.feeType,
         flatAmount: existing.flatAmount ?? '',
         percentage: existing.percentage ?? '',
+        minFee: existing.minFee ?? '',
+        maxFee: existing.maxFee ?? '',
         tiers: existing.tiers,
         currency: existing.currency,
+        destinationCountry: existing.destinationCountry ?? '',
+        priority: existing.priority ?? 0,
       }
     : undefined;
 
