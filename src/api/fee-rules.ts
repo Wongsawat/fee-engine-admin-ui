@@ -25,11 +25,17 @@ function buildListUrl(filters: FeeRuleFilters, page: number, size = 20): string 
   return `/admin/fee-rules?${params}`;
 }
 
-export function useFeeRules(filters: FeeRuleFilters, page: number) {
+export function useFeeRules(
+  filters: FeeRuleFilters,
+  page: number,
+  size = 20,
+  enabled = true,
+) {
   const { token } = useAuth();
   return useQuery({
-    queryKey: ['fee-rules', 'list', filters, page] as const,
-    queryFn: () => apiFetch<FeeRulePageResponse>(buildListUrl(filters, page), token),
+    queryKey: ['fee-rules', 'list', filters, page, size] as const,
+    queryFn: () => apiFetch<FeeRulePageResponse>(buildListUrl(filters, page, size), token),
+    enabled,
   });
 }
 
