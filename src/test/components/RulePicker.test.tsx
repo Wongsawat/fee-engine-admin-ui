@@ -1,4 +1,5 @@
 import { screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils';
 import { RulePicker } from '@/components/RulePicker';
 import { MOCK_RULE } from '../mocks/handlers';
@@ -46,5 +47,13 @@ describe('RulePicker', () => {
     renderWithProviders(<RulePicker value={undefined} onChange={vi.fn()} />);
     await screen.findByText(/DOMESTIC/i);
     expect(screen.queryByText(/showing first 100/i)).not.toBeInTheDocument();
+  });
+
+  it('hides non-matching items when search text is typed', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RulePicker value={undefined} onChange={vi.fn()} />);
+    await screen.findByText(/DOMESTIC \| FPS \| FLAT \| GBP/i); // wait for items to load
+    await user.type(screen.getByPlaceholderText(/search rules/i), 'XYZ_NO_MATCH');
+    expect(screen.queryByText(/DOMESTIC \| FPS \| FLAT \| GBP/i)).not.toBeInTheDocument();
   });
 });

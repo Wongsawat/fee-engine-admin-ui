@@ -1,5 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Routes, Route } from 'react-router-dom';
 import { renderWithProviders } from '../test-utils';
 import { DraftNewPage } from '@/pages/DraftNewPage';
 import { http, HttpResponse } from 'msw';
@@ -29,17 +30,16 @@ describe('DraftNewPage', () => {
 
   it('navigates to the new draft detail page on success', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<DraftNewPage />, {
-      initialEntries: ['/ai-drafts/new'],
-    });
+    renderWithProviders(
+      <Routes>
+        <Route path="/ai-drafts/new" element={<DraftNewPage />} />
+        <Route path="/ai-drafts/:id" element={<div>Draft detail</div>} />
+      </Routes>,
+      { initialEntries: ['/ai-drafts/new'] }
+    );
     await user.type(screen.getByRole('textbox', { name: /prompt/i }), 'make a rule');
     await user.click(screen.getByRole('button', { name: /generate/i }));
-    // After success the page should navigate — the mutation completes and
-    // the list query is invalidated. We assert the form returned to its
-    // non-submitting state (the mock returns synchronously from the onSuccess).
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /generate/i })).toBeInTheDocument()
-    );
+    expect(await screen.findByText('Draft detail')).toBeInTheDocument();
   });
 
   it('shows error toast when generate returns 422', async () => {

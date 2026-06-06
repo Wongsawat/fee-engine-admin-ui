@@ -48,6 +48,37 @@ describe('DraftDetailPage — layout', () => {
     // the footer renders at least one "admin" entry (the createdBy field).
     expect(await screen.findAllByText(/admin/i)).not.toHaveLength(0);
   });
+
+  it('truncates long explanation and shows "Show more" button', async () => {
+    const longExplanation = 'A'.repeat(400);
+    server.use(
+      http.get(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json({ ...MOCK_DRAFT, explanation: longExplanation })
+      )
+    );
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    const showMore = await screen.findByRole('button', { name: /show more/i });
+    expect(showMore).toBeInTheDocument();
+    expect(screen.queryByText(longExplanation)).not.toBeInTheDocument();
+  });
+
+  it('expands full explanation when "Show more" is clicked', async () => {
+    const longExplanation = 'B'.repeat(400);
+    server.use(
+      http.get(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json({ ...MOCK_DRAFT, explanation: longExplanation })
+      )
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    await user.click(await screen.findByRole('button', { name: /show more/i }));
+    expect(screen.getByText(longExplanation)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument();
+  });
 });
 
 describe('DraftDetailPage — status-gated actions (PENDING)', () => {

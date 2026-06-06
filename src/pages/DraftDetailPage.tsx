@@ -15,6 +15,7 @@ import {
   useApproveDraft, useRejectDraft, useDeleteDraft,
 } from '@/api/ai-drafts';
 import { canDryRun, canApprove, canReject, canDelete, canEdit } from '@/lib/draft-helpers';
+import { formatRelativeTime } from '@/lib/format';
 import { ApiError } from '@/api/client';
 import type { RuleFormValues } from '@/lib/schemas';
 
@@ -52,6 +53,7 @@ export function DraftDetailPage() {
   const queryClient = useQueryClient();
   const id = extractIdFromPath(location.pathname);
   const [editMode, setEditMode] = useState(false);
+  const [showFullExplanation, setShowFullExplanation] = useState(false);
 
   const { data: draft, isLoading, error } = useAiDraft(id);
   const updateDraft = useUpdateDraft();
@@ -155,7 +157,20 @@ export function DraftDetailPage() {
       {draft.explanation != null && (
         <section aria-labelledby="explanation-heading">
           <h2 id="explanation-heading" className="text-sm font-medium mb-1">AI Explanation</h2>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{draft.explanation}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {draft.explanation.length > 300 && !showFullExplanation
+              ? `${draft.explanation.slice(0, 300)}…`
+              : draft.explanation}
+          </p>
+          {draft.explanation.length > 300 && (
+            <button
+              type="button"
+              className="mt-1 text-xs text-primary underline"
+              onClick={() => setShowFullExplanation(v => !v)}
+            >
+              {showFullExplanation ? 'Show less' : 'Show more'}
+            </button>
+          )}
         </section>
       )}
 
@@ -269,8 +284,8 @@ export function DraftDetailPage() {
 
       {/* Metadata footer */}
       <footer className="text-xs text-muted-foreground border-t pt-4 space-y-0.5">
-        <p>Created by <span className="font-medium">{draft.createdBy}</span> at {draft.createdAt}</p>
-        <p>Updated by <span className="font-medium">{draft.updatedBy}</span> at {draft.updatedAt}</p>
+        <p>Created by <span className="font-medium">{draft.createdBy}</span> {formatRelativeTime(draft.createdAt)}</p>
+        <p>Updated by <span className="font-medium">{draft.updatedBy}</span> {formatRelativeTime(draft.updatedAt)}</p>
       </footer>
     </div>
   );
