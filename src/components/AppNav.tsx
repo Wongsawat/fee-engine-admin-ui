@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 
 const LINKS = [
   { to: '/rules', label: 'Fee Rules' },
+  { to: '/ai-drafts', label: 'AI Drafts' },
   { to: '/dry-run', label: 'Dry Run' },
 ];
 

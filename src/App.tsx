@@ -5,6 +5,9 @@ import { ErrorToast } from './components/ErrorToast';
 import { RuleListPage } from './pages/RuleListPage';
 import { RuleFormPage } from './pages/RuleFormPage';
 import { DryRunPage } from './pages/DryRunPage';
+import { DraftListPage } from './pages/DraftListPage';
+import { DraftNewPage } from './pages/DraftNewPage';
+import { DraftDetailPage } from './pages/DraftDetailPage';
 
 export function App() {
   return (
@@ -18,6 +21,9 @@ export function App() {
             <Route path="/rules" element={<RuleListPage />} />
             <Route path="/rules/new" element={<RuleFormPage />} />
             <Route path="/rules/:id" element={<RuleFormPage />} />
+            <Route path="/ai-drafts" element={<DraftListPage />} />
+            <Route path="/ai-drafts/new" element={<DraftNewPage />} />
+            <Route path="/ai-drafts/:id" element={<DraftDetailPage />} />
             <Route path="/dry-run" element={<DryRunPage />} />
             <Route path="*" element={
               <div className="flex h-64 items-center justify-center text-muted-foreground">
