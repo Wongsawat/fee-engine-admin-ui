@@ -36,7 +36,7 @@ export function useAiDrafts(filters: DraftFilters) {
 
 export function useAiDraft(id: string | undefined) {
   const { token } = useAuth();
-  return useQuery({
+  return useQuery<AiDraftResponse>({
     queryKey: ['ai-drafts', 'detail', id] as const,
     queryFn: () => apiFetch<AiDraftResponse>(`/ai/drafts/${id}`, token),
     enabled: !!id,

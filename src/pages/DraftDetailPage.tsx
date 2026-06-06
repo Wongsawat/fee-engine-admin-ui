@@ -103,7 +103,7 @@ export function DraftDetailPage() {
         )}
       </section>
 
-      {draft.explanation && (
+      {draft.explanation != null && (
         <section aria-labelledby="explanation-heading">
           <h2 id="explanation-heading" className="text-sm font-medium mb-1">AI Explanation</h2>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{draft.explanation}</p>
@@ -145,7 +145,7 @@ export function DraftDetailPage() {
       </section>
 
       {/* Dry-run result section */}
-      {draft.dryRunResult && (
+      {!!draft.dryRunResult && (
         <section aria-labelledby="dry-run-result-heading">
           <h2 id="dry-run-result-heading" className="text-sm font-medium mb-1">Dry-run Result</h2>
           <div className={`rounded-md p-4 text-xs font-mono ${
