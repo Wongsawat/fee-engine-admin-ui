@@ -1,73 +1,107 @@
-# React + TypeScript + Vite
+# Fee Engine Admin UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Browse, create, edit, and dry-run fee rules; manage caps, corridor matching, and priority ordering.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Rule list** with filtering (payment type, scheme, charge bearer, fee type, currency, account identification, destination country, active state) and pagination.
+- **Rule create/edit** with full client-side validation. Conditional fields per `feeType`: `FLAT` requires `flatAmount`, `PERCENTAGE` requires `percentage` (plus optional `minFee`/`maxFee` caps), `TIERED` requires tiers, `FREE` permits none of these.
+- **Fee caps (V5)** — `minFee`/`maxFee` bounds on `PERCENTAGE` rules.
+- **Corridor matching (V6)** — `destinationCountry` (ISO 3166-1 alpha-2) on international payment types only.
+- **Priority ordering (V7)** — explicit non-negative `priority` integer (default 0) for rule selection.
+- **Status toggle** with optimistic updates and rollback on error.
+- **Dry run** — simulate a rule against a hypothetical payment to preview calculated charges.
 
-## React Compiler
+## Tech stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Concern | Choice |
+|---|---|
+| Framework | React 19, TypeScript, Vite |
+| Styling | Tailwind CSS v4 + shadcn/ui (Radix UI primitives in `src/components/ui/`) |
+| Data fetching | TanStack Query v5 |
+| Forms / validation | React Hook Form + Zod v4 (`@hookform/resolvers/zod`) |
+| Routing | React Router v7 |
+| Auth | Keycloak JS (PKCE S256) |
+| Notifications | Sonner |
+| Testing | Vitest + Testing Library + MSW v2 |
 
-## Expanding the ESLint configuration
+## Quick start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env.local   # VITE_API_BASE_URL intentionally blank; Vite proxy handles /admin/* locally
+npm run dev                  # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The Vite dev server proxies `/admin/*` to `http://localhost:8080` (the fee-engine backend).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Commands
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev       # Vite dev server with HMR
+npm run build     # tsc -b && vite build
+npm run lint      # ESLint
+npm test          # Vitest in watch mode
+npx vitest run                                       # Run all tests once
+npx vitest run src/test/path/to/file.test.tsx        # Single file
+npx vitest run --reporter=verbose                    # All tests, verbose
 ```
+
+## Project layout
+
+```
+src/
+  api/             TanStack Query hooks + apiFetch (RFC 9457 problem-detail errors)
+  auth/            Keycloak PKCE S256; AuthGuard redirects unauthenticated users
+  components/      RuleForm, RuleTable, TierEditor, FilterBar, AppNav, ErrorToast, StatusBadge (+ ui/ shadcn primitives)
+  lib/             Zod schemas + inferred form types (single source of truth for validation)
+  pages/           RuleListPage, RuleFormPage (create + edit), DryRunPage
+  test/            Vitest setup, MSW handlers, renderWithProviders helper, mocks
+  types/           API request/response shapes
+```
+
+### Layer responsibilities
+
+- **`src/types/fee-rule.ts`** — request/response shapes (source of truth for what the backend sends/accepts).
+- **`src/lib/schemas.ts`** — Zod schemas + inferred `RuleFormValues`/`DryRunFormValues` types.
+- **`src/api/fee-rules.ts`, `src/api/dry-run.ts`** — TanStack Query mutations/queries wrapping `apiFetch`.
+- **`src/api/client.ts`** — `apiFetch`: attaches Bearer token, parses RFC 9457 problem-detail errors into `ApiError`.
+- **`src/components/RuleForm.tsx`** — the canonical form (used by `RuleFormPage` and embedded by `DryRunPage`'s rule definition).
+- **`src/pages/`** — page-level composition, navigation state, and route-specific wiring.
+
+## Routes
+
+| Path | Page | Notes |
+|---|---|---|
+| `/` | redirect | → `/rules` |
+| `/rules` | `RuleListPage` | Filterable, paginated rule list |
+| `/rules/new` | `RuleFormPage` | Create mode |
+| `/rules/:id` | `RuleFormPage` | Edit mode |
+| `/dry-run` | `DryRunPage` | Simulate a rule against a hypothetical payment |
+| `*` | 404 | "Page not found" |
+
+## Conditional field rules
+
+Enforced by `ruleFormSchema.superRefine` in `src/lib/schemas.ts`:
+
+- `FLAT` → `flatAmount` required.
+- `PERCENTAGE` → `percentage` required; `minFee`/`maxFee` optional; `minFee ≤ maxFee` and both `> 0`.
+- `TIERED` → at least one tier required; each tier's `max > min`.
+- `FREE` → none of `flatAmount`, `percentage`, `tiers` may be set.
+- `destinationCountry` → only on `INTERNATIONAL`, `INTERNATIONAL_SCHEDULED`, `INTERNATIONAL_STANDING_ORDER`; must match `^[A-Z]{2}$`.
+
+## Testing
+
+- `npm test` runs Vitest in watch mode; `npx vitest run` runs once.
+- Tests use Vitest + Testing Library + MSW v2.
+- The test server (`src/test/mocks/server.ts`) runs with `onUnhandledRequest: 'error'` — any fetch without a registered handler fails the test.
+- Use `renderWithProviders` from `src/test/test-utils.tsx` for component tests. It wraps with `AuthContext` (stub token), `QueryClientProvider` (retries disabled), and `MemoryRouter`.
+- Shared MSW fixtures live in `src/test/mocks/handlers.ts`; one-off overrides use `server.use(...)` inline.
+
+## Environment
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_BASE_URL` | Optional override for the API base URL. Leave blank in local dev so the Vite proxy can forward `/admin/*` to `http://localhost:8080`. |
+
+Keycloak is configured in `src/auth/AuthProvider.tsx` (PKCE S256, `check-sso` on load). Update the Keycloak URL, realm, and client ID there.
