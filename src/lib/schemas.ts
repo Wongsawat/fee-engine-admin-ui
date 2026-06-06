@@ -165,3 +165,21 @@ export const dryRunFormSchema = z.object({
 
 export type RuleFormValues = z.infer<typeof ruleFormSchema>;
 export type DryRunFormValues = z.infer<typeof dryRunFormSchema>;
+
+export const DRAFT_MODES = ['GENERATE', 'UPDATE'] as const;
+
+export const promptFormSchema = z.object({
+  mode: z.enum(DRAFT_MODES, { message: 'Required' }),
+  prompt: z.string().min(1, 'Required').max(2000, 'Maximum 2000 characters'),
+  targetRuleId: z.string().optional(),
+}).superRefine((val, ctx) => {
+  if (val.mode === 'UPDATE' && !val.targetRuleId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['targetRuleId'],
+      message: 'Required for UPDATE mode',
+    });
+  }
+});
+
+export type PromptFormValues = z.infer<typeof promptFormSchema>;
