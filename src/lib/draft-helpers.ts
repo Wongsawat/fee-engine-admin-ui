@@ -1,13 +1,5 @@
-import type { DraftStatus, DraftType, GenerateDraftRequest } from '@/types/ai-draft';
-
-// Local structural type — mirrors the PromptFormValues shape that will be
-// exported from '@/lib/schemas' by a future task. Defined locally so this
-// module does not have a build-time dependency on the schemas module.
-type PromptFormValues = {
-  mode: DraftType;
-  prompt: string;
-  targetRuleId?: string;
-};
+import type { DraftStatus, GenerateDraftRequest } from '@/types/ai-draft';
+import type { PromptFormValues } from '@/lib/schemas';
 
 export function canDryRun(status: DraftStatus): boolean {
   return status === 'PENDING' || status === 'DRY_RUN_FAILED';

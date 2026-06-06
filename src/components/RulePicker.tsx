@@ -20,7 +20,7 @@ export function RulePicker({ value, onChange }: RulePickerProps) {
 
   return (
     <div className="space-y-1">
-      <Command className="rounded-md border">
+      <Command className="rounded-md border" aria-label="Target rule">
         <CommandInput placeholder="Search rules…" />
         <CommandList>
           <CommandEmpty>No rules found.</CommandEmpty>

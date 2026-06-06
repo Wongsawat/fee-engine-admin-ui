@@ -33,7 +33,7 @@ export function AiReviewDialog({ ruleJson }: AiReviewDialogProps) {
         {review.isError && (
           <p className="text-sm text-destructive">Review failed. Please try again.</p>
         )}
-        {review.data && (
+        {!review.isPending && review.data && (
           <p className="text-sm whitespace-pre-wrap">{review.data.analysis}</p>
         )}
       </DialogContent>
