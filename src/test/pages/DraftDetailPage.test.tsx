@@ -303,3 +303,25 @@ describe('DraftDetailPage — 409 Reload-action toast', () => {
     );
   });
 });
+
+describe('DraftDetailPage — dry-run 404 toast', () => {
+  it('shows toast.error when dry-run returns 404', async () => {
+    server.use(
+      http.post(`/ai/drafts/${DRAFT_ID}/dry-run`, () =>
+        HttpResponse.json(
+          { type: 'about:blank', status: 404, title: 'Target rule no longer exists' },
+          { status: 404 }
+        )
+      )
+    );
+    const errorSpy = vi.spyOn(toast, 'error');
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    await user.click(await screen.findByRole('button', { name: /dry.?run/i }));
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith('Target rule no longer exists.')
+    );
+  });
+});

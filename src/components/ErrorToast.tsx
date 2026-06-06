@@ -29,7 +29,9 @@ function useApiErrorToast() {
         event.type === 'updated' &&
         event.mutation?.state.status === 'error'
       ) {
-        handle(event.mutation.state.error);
+        const err = event.mutation.state.error;
+        if (err instanceof ApiError && (err.status === 404 || err.status === 409)) return;
+        handle(err);
       }
     });
 

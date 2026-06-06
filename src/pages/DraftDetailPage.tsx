@@ -118,6 +118,16 @@ export function DraftDetailPage() {
     });
   }
 
+  function handleDryRun() {
+    dryRun.mutate(draft!.id, {
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 404) {
+          toast.error('Target rule no longer exists.');
+        }
+      },
+    });
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
       {/* Header row */}
@@ -217,7 +227,7 @@ export function DraftDetailPage() {
         {canDryRun(draft.status) && (
           <Button
             variant="outline"
-            onClick={() => dryRun.mutate(draft.id)}
+            onClick={handleDryRun}
             disabled={dryRun.isPending}
           >
             {dryRun.isPending ? 'Running…' : 'Dry Run'}
