@@ -5,6 +5,7 @@ import { DraftDetailPage } from '@/pages/DraftDetailPage';
 import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server';
 import { MOCK_DRAFT } from '../mocks/handlers';
+import { toast } from 'sonner';
 
 const DRAFT_ID = MOCK_DRAFT.id;
 
@@ -43,7 +44,9 @@ describe('DraftDetailPage — layout', () => {
     renderWithProviders(<DraftDetailPage />, {
       initialEntries: [`/ai-drafts/${DRAFT_ID}`],
     });
-    expect(await screen.findByText(/admin/i)).toBeInTheDocument();
+    // createdBy and updatedBy are both 'admin' — use getAllByText to confirm
+    // the footer renders at least one "admin" entry (the createdBy field).
+    expect(await screen.findAllByText(/admin/i)).not.toHaveLength(0);
   });
 });
 
@@ -183,6 +186,120 @@ describe('DraftDetailPage — concurrent edit 409', () => {
     // mutation error state is set; ErrorToast handles display (not in test scope)
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /saving/i })).not.toBeInTheDocument()
+    );
+  });
+});
+
+describe('DraftDetailPage — delete navigates away', () => {
+  it('navigates to /ai-drafts after successful delete', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    // PENDING draft — delete button is visible and enabled
+    const deleteBtn = await screen.findByRole('button', { name: /^delete$/i });
+    await user.click(deleteBtn);
+    // After navigation the detail page heading is gone
+    await waitFor(() =>
+      expect(screen.queryByText(MOCK_DRAFT.prompt)).not.toBeInTheDocument()
+    );
+  });
+});
+
+describe('DraftDetailPage — PENDING reset toast on edit', () => {
+  it('shows toast.info when edit resets status from DRY_RUN_PASSED to PENDING', async () => {
+    server.use(
+      http.get(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json({ ...MOCK_DRAFT, status: 'DRY_RUN_PASSED', dryRunResult: { result: 'ok' } })
+      ),
+      http.put(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json({ ...MOCK_DRAFT, status: 'PENDING', dryRunResult: null })
+      )
+    );
+    // toast is an object with methods — spy on the method, not the module export
+    const infoSpy = vi.spyOn(toast, 'info');
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    await user.click(await screen.findByRole('button', { name: /edit rule/i }));
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(infoSpy).toHaveBeenCalledWith('Rule edited. Draft reset to PENDING.')
+    );
+  });
+});
+
+describe('DraftDetailPage — no changes detected toast', () => {
+  it('shows toast.info when PUT returns the same updatedAt', async () => {
+    // Same updatedAt as MOCK_DRAFT signals the backend made no change
+    server.use(
+      http.put(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json({ ...MOCK_DRAFT, updatedAt: MOCK_DRAFT.updatedAt })
+      )
+    );
+    const infoSpy = vi.spyOn(toast, 'info');
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    await user.click(await screen.findByRole('button', { name: /edit rule/i }));
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(infoSpy).toHaveBeenCalledWith('No changes detected.')
+    );
+  });
+});
+
+describe('DraftDetailPage — approve 404 specific toast', () => {
+  it('shows specific toast.error text when approve returns 404', async () => {
+    server.use(
+      http.get(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json({ ...MOCK_DRAFT, status: 'DRY_RUN_PASSED', dryRunResult: { result: 'ok' } })
+      ),
+      http.post(`/ai/drafts/${DRAFT_ID}/approve`, () =>
+        HttpResponse.json(
+          { type: 'about:blank', status: 404, title: 'Target rule no longer exists' },
+          { status: 404 }
+        )
+      )
+    );
+    const errorSpy = vi.spyOn(toast, 'error');
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    await user.click(await screen.findByRole('button', { name: /approve/i }));
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Target rule was deleted. Draft reset to PENDING — re-run dry-run or reject.'
+      )
+    );
+  });
+});
+
+describe('DraftDetailPage — 409 Reload-action toast', () => {
+  it('shows toast.error with Reload action when edit conflicts', async () => {
+    server.use(
+      http.put(`/ai/drafts/${DRAFT_ID}`, () =>
+        HttpResponse.json(
+          { type: 'about:blank', status: 409, title: 'Draft was modified concurrently' },
+          { status: 409 }
+        )
+      )
+    );
+    const errorSpy = vi.spyOn(toast, 'error');
+    const user = userEvent.setup();
+    renderWithProviders(<DraftDetailPage />, {
+      initialEntries: [`/ai-drafts/${DRAFT_ID}`],
+    });
+    await user.click(await screen.findByRole('button', { name: /edit rule/i }));
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Draft was modified concurrently. Reload and retry.',
+        expect.objectContaining({ action: expect.objectContaining({ label: 'Reload' }) })
+      )
     );
   });
 });

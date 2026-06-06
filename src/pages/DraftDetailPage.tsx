@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,8 +10,12 @@ import {
 import { DraftStatusBadge } from '@/components/DraftStatusBadge';
 import { AiReviewDialog } from '@/components/AiReviewDialog';
 import { RuleForm } from '@/components/RuleForm';
-import { useAiDraft, useUpdateDraft, useDraftDryRun, useApproveDraft, useRejectDraft, useDeleteDraft } from '@/api/ai-drafts';
+import {
+  useAiDraft, useUpdateDraft, useDraftDryRun,
+  useApproveDraft, useRejectDraft, useDeleteDraft,
+} from '@/api/ai-drafts';
 import { canDryRun, canApprove, canReject, canDelete, canEdit } from '@/lib/draft-helpers';
+import { ApiError } from '@/api/client';
 import type { RuleFormValues } from '@/lib/schemas';
 
 function extractIdFromPath(pathname: string): string | undefined {
@@ -42,6 +48,8 @@ function ruleJsonToFormValues(ruleJson: unknown): Partial<RuleFormValues> {
 
 export function DraftDetailPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const id = extractIdFromPath(location.pathname);
   const [editMode, setEditMode] = useState(false);
 
@@ -56,27 +64,57 @@ export function DraftDetailPage() {
     return <div className="mx-auto max-w-4xl px-4 py-6 text-muted-foreground">Loading…</div>;
   }
 
-  const is404 = error && (error as { status?: number }).status === 404;
+  const is404 = error && (error as ApiError).status === 404;
   if (is404 || !draft) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 space-y-2">
         <p className="text-muted-foreground">Draft not found</p>
-        <Link to="/ai-drafts" className="underline text-sm">Back to AI Drafts</Link>
+        <Link to="/ai-drafts" className="underline text-sm" aria-label="Back">
+          Back to AI Drafts
+        </Link>
       </div>
     );
   }
 
-  // NOTE: handleEditSubmit, handleApprove, and handleDelete below are intentionally
-  // minimal — the missing toasts and navigate-on-delete are added in Task 19.
   function handleEditSubmit(values: RuleFormValues) {
     const prevStatus = draft!.status;
+    const prevUpdatedAt = draft!.updatedAt;
     updateDraft.mutate({ id: draft!.id, rule: values }, {
       onSuccess: (updated) => {
         setEditMode(false);
         if (updated.status !== prevStatus) {
-          // status reset to PENDING — handled via query invalidation + re-render
+          toast.info('Rule edited. Draft reset to PENDING.');
+        } else if (updated.updatedAt === prevUpdatedAt) {
+          toast.info('No changes detected.');
         }
       },
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 409) {
+          toast.error('Draft was modified concurrently. Reload and retry.', {
+            action: {
+              label: 'Reload',
+              onClick: () =>
+                queryClient.invalidateQueries({ queryKey: ['ai-drafts', 'detail', draft!.id] }),
+            },
+          });
+        }
+      },
+    });
+  }
+
+  function handleApprove() {
+    approve.mutate(draft!.id, {
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 404) {
+          toast.error('Target rule was deleted. Draft reset to PENDING — re-run dry-run or reject.');
+        }
+      },
+    });
+  }
+
+  function handleDelete() {
+    deleteDraft.mutate(draft!.id, {
+      onSuccess: () => navigate('/ai-drafts'),
     });
   }
 
@@ -96,13 +134,14 @@ export function DraftDetailPage() {
       <section aria-labelledby="prompt-heading">
         <h2 id="prompt-heading" className="text-sm font-medium mb-1">Prompt</h2>
         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{draft.prompt}</p>
-        {draft.targetRuleId && (
+        {draft.targetRuleId != null && (
           <p className="text-xs text-muted-foreground mt-1">
             Target rule: <span className="font-mono">{draft.targetRuleId}</span>
           </p>
         )}
       </section>
 
+      {/* Explanation section */}
       {draft.explanation != null && (
         <section aria-labelledby="explanation-heading">
           <h2 id="explanation-heading" className="text-sm font-medium mb-1">AI Explanation</h2>
@@ -111,9 +150,9 @@ export function DraftDetailPage() {
       )}
 
       {/* Rule JSON section */}
-      <section aria-label="Rule JSON" aria-labelledby="rule-json-heading">
+      <section aria-label="Rule JSON">
         <div className="flex items-center gap-2 mb-2">
-          <h2 id="rule-json-heading" className="text-sm font-medium">Rule JSON</h2>
+          <h2 className="text-sm font-medium">Rule JSON</h2>
           {canEdit(draft.status) && !editMode && (
             <Button size="sm" variant="outline" onClick={() => setEditMode(true)}
               disabled={!draft.ruleJson}>
@@ -145,11 +184,13 @@ export function DraftDetailPage() {
       </section>
 
       {/* Dry-run result section */}
-      {!!draft.dryRunResult && (
+      {draft.dryRunResult != null && (
         <section aria-labelledby="dry-run-result-heading">
           <h2 id="dry-run-result-heading" className="text-sm font-medium mb-1">Dry-run Result</h2>
           <div className={`rounded-md p-4 text-xs font-mono ${
-            draft.status === 'DRY_RUN_PASSED' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            draft.status === 'DRY_RUN_PASSED'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-red-50 border border-red-200'
           }`}>
             <pre className="whitespace-pre-wrap">{JSON.stringify(draft.dryRunResult, null, 2)}</pre>
           </div>
@@ -160,7 +201,7 @@ export function DraftDetailPage() {
       )}
 
       {/* Linked rule section (APPROVED) */}
-      {draft.feeRuleId && (
+      {draft.feeRuleId != null && (
         <section>
           <p className="text-sm">
             Pushed to fee-engine as rule{' '}
@@ -183,10 +224,7 @@ export function DraftDetailPage() {
           </Button>
         )}
         {canApprove(draft.status) && (
-          <Button
-            onClick={() => approve.mutate(draft.id)}
-            disabled={approve.isPending}
-          >
+          <Button onClick={handleApprove} disabled={approve.isPending}>
             {approve.isPending ? 'Approving…' : 'Approve'}
           </Button>
         )}
@@ -205,9 +243,7 @@ export function DraftDetailPage() {
               <span>
                 <Button
                   variant="ghost"
-                  onClick={() => {
-                    if (canDelete(draft.status)) deleteDraft.mutate(draft.id);
-                  }}
+                  onClick={handleDelete}
                   disabled={!canDelete(draft.status) || deleteDraft.isPending}
                 >
                   {deleteDraft.isPending ? 'Deleting…' : 'Delete'}
@@ -222,8 +258,9 @@ export function DraftDetailPage() {
       </div>
 
       {/* Metadata footer */}
-      <footer className="text-xs text-muted-foreground border-t pt-4">
-        <p>Created by {draft.createdBy} at {draft.createdAt} · Updated by {draft.updatedBy} at {draft.updatedAt}</p>
+      <footer className="text-xs text-muted-foreground border-t pt-4 space-y-0.5">
+        <p>Created by <span className="font-medium">{draft.createdBy}</span> at {draft.createdAt}</p>
+        <p>Updated by <span className="font-medium">{draft.updatedBy}</span> at {draft.updatedAt}</p>
       </footer>
     </div>
   );
