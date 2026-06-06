@@ -1,6 +1,6 @@
 # Fee Engine Admin UI
 
-React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Browse, create, edit, and dry-run fee rules; manage caps, corridor matching, and priority ordering.
+React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Browse, create, edit, and dry-run fee rules; manage caps, corridor matching, and priority ordering. Generate, review, and approve AI-drafted rules.
 
 ## Features
 
@@ -11,6 +11,7 @@ React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Br
 - **Priority ordering (V7)** — explicit non-negative `priority` integer (default 0) for rule selection.
 - **Status toggle** with optimistic updates and rollback on error.
 - **Dry run** — simulate a rule against a hypothetical payment to preview calculated charges.
+- **AI Drafts** — generate draft fee rules from natural-language prompts (GENERATE or UPDATE mode). Review AI analysis, edit rule JSON inline, dry-run, approve (pushes to fee-engine), or reject. Status-gated actions with toast notifications for resets, conflicts (409), and missing target rules (404).
 
 ## Tech stack
 
@@ -29,11 +30,11 @@ React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Br
 
 ```bash
 npm install
-cp .env.example .env.local   # VITE_API_BASE_URL intentionally blank; Vite proxy handles /admin/* locally
+cp .env.example .env.local   # VITE_API_BASE_URL intentionally blank; Vite proxy handles /admin/* and /ai/* locally
 npm run dev                  # http://localhost:5173
 ```
 
-The Vite dev server proxies `/admin/*` to `http://localhost:8080` (the fee-engine backend).
+The Vite dev server proxies `/admin/*` to `http://localhost:8080` (the fee-engine backend) and `/ai/*` to `http://localhost:8081` (the AI draft service).
 
 ## Commands
 
@@ -53,19 +54,22 @@ npx vitest run --reporter=verbose                    # All tests, verbose
 src/
   api/             TanStack Query hooks + apiFetch (RFC 9457 problem-detail errors)
   auth/            Keycloak PKCE S256; AuthGuard redirects unauthenticated users
-  components/      RuleForm, RuleTable, TierEditor, FilterBar, AppNav, ErrorToast, StatusBadge (+ ui/ shadcn primitives)
-  lib/             Zod schemas + inferred form types (single source of truth for validation)
-  pages/           RuleListPage, RuleFormPage (create + edit), DryRunPage
+  components/      RuleForm, RuleTable, TierEditor, FilterBar, AppNav, ErrorToast, StatusBadge,
+                   DraftStatusBadge, DraftTable, RulePicker, AiReviewDialog, PromptForm (+ ui/ shadcn primitives)
+  lib/             Zod schemas + inferred form types, formatRelativeTime, draft-helpers
+  pages/           RuleListPage, RuleFormPage (create + edit), DryRunPage,
+                   DraftListPage, DraftNewPage, DraftDetailPage
   test/            Vitest setup, MSW handlers, renderWithProviders helper, mocks
-  types/           API request/response shapes
+  types/           API request/response shapes (fee-rule, ai-draft)
 ```
 
 ### Layer responsibilities
 
-- **`src/types/fee-rule.ts`** — request/response shapes (source of truth for what the backend sends/accepts).
-- **`src/lib/schemas.ts`** — Zod schemas + inferred `RuleFormValues`/`DryRunFormValues` types.
-- **`src/api/fee-rules.ts`, `src/api/dry-run.ts`** — TanStack Query mutations/queries wrapping `apiFetch`.
+- **`src/types/fee-rule.ts`**, **`src/types/ai-draft.ts`** — request/response shapes (source of truth for what the backend sends/accepts).
+- **`src/lib/schemas.ts`** — Zod schemas + inferred `RuleFormValues`/`DryRunFormValues`/`PromptFormValues` types.
+- **`src/api/fee-rules.ts`**, **`src/api/dry-run.ts`**, **`src/api/ai-drafts.ts`** — TanStack Query mutations/queries wrapping `apiFetch`.
 - **`src/api/client.ts`** — `apiFetch`: attaches Bearer token, parses RFC 9457 problem-detail errors into `ApiError`.
+- **`src/lib/format.ts`**, **`src/lib/draft-helpers.ts`** — pure utilities (`formatRelativeTime`, draft status guards, rule summary extraction).
 - **`src/components/RuleForm.tsx`** — the canonical form (used by `RuleFormPage` and embedded by `DryRunPage`'s rule definition).
 - **`src/pages/`** — page-level composition, navigation state, and route-specific wiring.
 
@@ -77,6 +81,9 @@ src/
 | `/rules` | `RuleListPage` | Filterable, paginated rule list |
 | `/rules/new` | `RuleFormPage` | Create mode |
 | `/rules/:id` | `RuleFormPage` | Edit mode |
+| `/ai-drafts` | `DraftListPage` | AI draft list with status filter and infinite scroll |
+| `/ai-drafts/new` | `DraftNewPage` | Prompt form (GENERATE or UPDATE mode) |
+| `/ai-drafts/:id` | `DraftDetailPage` | View, edit, dry-run, approve/reject/delete |
 | `/dry-run` | `DryRunPage` | Simulate a rule against a hypothetical payment |
 | `*` | 404 | "Page not found" |
 
@@ -102,6 +109,6 @@ Enforced by `ruleFormSchema.superRefine` in `src/lib/schemas.ts`:
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_BASE_URL` | Optional override for the API base URL. Leave blank in local dev so the Vite proxy can forward `/admin/*` to `http://localhost:8080`. |
+| `VITE_API_BASE_URL` | Optional override for the API base URL. Leave blank in local dev so the Vite proxy can forward `/admin/*` to `http://localhost:8080` and `/ai/*` to `http://localhost:8081`. |
 
 Keycloak is configured in `src/auth/AuthProvider.tsx` (PKCE S256, `check-sso` on load). Update the Keycloak URL, realm, and client ID there.
