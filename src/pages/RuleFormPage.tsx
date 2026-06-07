@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { RuleForm } from '@/components/RuleForm';
 import { useFeeRule, useCreateFeeRule, useUpdateFeeRule } from '@/api/fee-rules';
 import type { RuleFormValues } from '@/lib/schemas';
+import { toApiRuleRequest } from '@/lib/mappers';
 
 function extractIdFromPath(pathname: string): string | undefined {
   const segments = pathname.split('/').filter(Boolean);
@@ -25,13 +26,14 @@ export function RuleFormPage() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   function handleSubmit(values: RuleFormValues) {
+    const apiRule = toApiRuleRequest(values);
     if (isEdit && existing) {
       updateMutation.mutate(
-        { id, ...values, version: existing.version },
+        { id, ...apiRule, version: existing.version },
         { onSuccess: () => navigate('/rules') }
       );
     } else {
-      createMutation.mutate(values, {
+      createMutation.mutate(apiRule, {
         onSuccess: () => navigate('/rules'),
       });
     }
@@ -53,11 +55,13 @@ export function RuleFormPage() {
         accountIdentification: existing.accountIdentification ?? '',
         chargeType: existing.chargeType,
         feeType: existing.feeType,
-        flatAmount: existing.flatAmount ?? '',
-        percentage: existing.percentage ?? '',
-        minFee: existing.minFee ?? '',
-        maxFee: existing.maxFee ?? '',
-        tiers: existing.tiers,
+        flatAmount: existing.flatAmount != null ? String(existing.flatAmount) : '',
+        percentage: existing.percentage != null ? String(existing.percentage) : '',
+        minFee: existing.minFee != null ? String(existing.minFee) : '',
+        maxFee: existing.maxFee != null ? String(existing.maxFee) : '',
+        tiers: existing.tiers?.map((t) => ({
+          min: String(t.min), max: String(t.max), amount: String(t.amount),
+        })) ?? [],
         currency: existing.currency,
         destinationCountry: existing.destinationCountry ?? '',
         priority: existing.priority ?? 0,

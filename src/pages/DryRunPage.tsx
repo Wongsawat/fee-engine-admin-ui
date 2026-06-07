@@ -14,11 +14,12 @@ import { TierEditor } from '@/components/TierEditor';
 import { z } from 'zod';
 import {
   ruleFormSchema,
-  PAYMENT_TYPES, PAYMENT_SCHEMES, CHARGE_BEARERS, FEE_TYPES,
+  PAYMENT_TYPES, PAYMENT_SCHEMES, FEE_TYPES,
   INTERNATIONAL_PAYMENT_TYPES,
   type DryRunFormValues,
 } from '@/lib/schemas';
 import { useDryRun } from '@/api/dry-run';
+import { toApiRuleRequest } from '@/lib/mappers';
 
 const instructedAmountSchema = z
   .object({
@@ -73,9 +74,9 @@ export function DryRunPage() {
 
   function onSubmit(values: FormValues) {
     dryRun.mutate({
-      rule: values.rule,
+      rule: toApiRuleRequest(values.rule),
       instructedAmount: values.instructedAmount?.amount
-        ? values.instructedAmount
+        ? { amount: parseFloat(values.instructedAmount.amount), currency: values.instructedAmount.currency }
         : undefined,
       debtorAccount: isEmptyAccount(values.debtorAccount) ? undefined : values.debtorAccount,
       creditorAccount: isEmptyAccount(values.creditorAccount) ? undefined : values.creditorAccount,
@@ -144,7 +145,9 @@ export function DryRunPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {CHARGE_BEARERS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                        {(['BorneByDebtor', 'BorneByCreditor'] as const).map((v) => (
+                          <SelectItem key={v} value={v}>{v}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

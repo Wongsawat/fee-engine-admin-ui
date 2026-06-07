@@ -18,9 +18,9 @@ export type ChargeBearer =
 export type FeeType = 'FLAT' | 'PERCENTAGE' | 'TIERED' | 'FREE';
 
 export interface Tier {
-  min: string;
-  max: string;
-  amount: string;
+  min: number;
+  max: number;
+  amount: number;
 }
 
 export interface FeeRuleResponse {
@@ -31,10 +31,10 @@ export interface FeeRuleResponse {
   accountIdentification?: string;
   chargeType: string;
   feeType: FeeType;
-  flatAmount?: string;
-  percentage?: string;
-  minFee?: string;
-  maxFee?: string;
+  flatAmount?: number;
+  percentage?: number;
+  minFee?: number;
+  maxFee?: number;
   tiers: Tier[];
   currency: string;
   destinationCountry?: string;
@@ -64,10 +64,10 @@ export interface CreateFeeRuleRequest {
   accountIdentification?: string;
   chargeType: string;
   feeType: FeeType;
-  flatAmount?: string;
-  percentage?: string;
-  minFee?: string;
-  maxFee?: string;
+  flatAmount?: number;
+  percentage?: number;
+  minFee?: number;
+  maxFee?: number;
   tiers?: Tier[];
   currency: string;
   destinationCountry?: string;
@@ -95,7 +95,7 @@ export interface FeeRuleFilters {
 }
 
 export interface AmountDto {
-  amount: string;
+  amount: number;
   currency: string;
 }
 
