@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ import {
 import { canDryRun, canApprove, canReject, canDelete, canEdit } from '@/lib/draft-helpers';
 import { formatRelativeTime } from '@/lib/format';
 import { ApiError } from '@/api/client';
+import { Input } from '@/components/ui/input';
 import type { RuleFormValues } from '@/lib/schemas';
 
 function extractIdFromPath(pathname: string): string | undefined {
@@ -36,11 +37,15 @@ function ruleJsonToFormValues(ruleJson: unknown): Partial<RuleFormValues> {
     accountIdentification: typeof r.accountIdentification === 'string' ? r.accountIdentification : undefined,
     chargeType: typeof r.chargeType === 'string' ? r.chargeType : '',
     feeType: r.feeType as RuleFormValues['feeType'],
-    flatAmount: typeof r.flatAmount === 'string' ? r.flatAmount : undefined,
-    percentage: typeof r.percentage === 'string' ? r.percentage : undefined,
-    minFee: typeof r.minFee === 'string' ? r.minFee : undefined,
-    maxFee: typeof r.maxFee === 'string' ? r.maxFee : undefined,
-    tiers: Array.isArray(r.tiers) ? r.tiers as RuleFormValues['tiers'] : [],
+    flatAmount: r.flatAmount != null ? String(r.flatAmount) : undefined,
+    percentage: r.percentage != null ? String(r.percentage) : undefined,
+    minFee: r.minFee != null ? String(r.minFee) : undefined,
+    maxFee: r.maxFee != null ? String(r.maxFee) : undefined,
+    tiers: Array.isArray(r.tiers)
+      ? r.tiers.map((t: Record<string, unknown>) => ({
+          min: String(t.min), max: String(t.max), amount: String(t.amount),
+        }))
+      : [],
     currency: typeof r.currency === 'string' ? r.currency : '',
     destinationCountry: typeof r.destinationCountry === 'string' ? r.destinationCountry : undefined,
     priority: typeof r.priority === 'number' ? r.priority : undefined,
@@ -54,8 +59,20 @@ export function DraftDetailPage() {
   const id = extractIdFromPath(location.pathname);
   const [editMode, setEditMode] = useState(false);
   const [showFullExplanation, setShowFullExplanation] = useState(false);
+  const [dryRunAmount, setDryRunAmount] = useState('');
+  const [dryRunCurrency, setDryRunCurrency] = useState('');
 
   const { data: draft, isLoading, error } = useAiDraft(id);
+
+  useEffect(() => {
+    if (draft?.ruleJson && typeof draft.ruleJson === 'object') {
+      const rule = draft.ruleJson as Record<string, unknown>;
+      if (typeof rule.currency === 'string' && !dryRunCurrency) {
+        setDryRunCurrency(rule.currency);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.id]);
   const updateDraft = useUpdateDraft();
   const dryRun = useDraftDryRun();
   const approve = useApproveDraft();
@@ -121,7 +138,7 @@ export function DraftDetailPage() {
   }
 
   function handleDryRun() {
-    dryRun.mutate(draft!.id, {
+    dryRun.mutate({ id: draft!.id, amount: dryRunAmount, currency: dryRunCurrency }, {
       onError: (err) => {
         if (err instanceof ApiError && err.status === 404) {
           toast.error('Target rule no longer exists.');
@@ -207,6 +224,41 @@ export function DraftDetailPage() {
           </pre>
         )}
       </section>
+
+      {/* Payment context for dry-run */}
+      {canDryRun(draft.status) && (
+        <section aria-labelledby="payment-context-heading">
+          <h2 id="payment-context-heading" className="text-sm font-medium mb-2">Payment Context</h2>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1 space-y-1">
+              <label className="text-xs text-muted-foreground" htmlFor="dry-run-amount">
+                Instructed Amount
+              </label>
+              <Input
+                id="dry-run-amount"
+                placeholder="e.g. 500.00"
+                value={dryRunAmount}
+                onChange={(e) => setDryRunAmount(e.target.value)}
+              />
+            </div>
+            <div className="w-24 space-y-1">
+              <label className="text-xs text-muted-foreground" htmlFor="dry-run-currency">
+                Currency
+              </label>
+              <Input
+                id="dry-run-currency"
+                placeholder="GBP"
+                maxLength={3}
+                value={dryRunCurrency}
+                onChange={(e) => setDryRunCurrency(e.target.value.toUpperCase())}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter an amount to see calculated charges. Leave blank to validate rule structure only.
+          </p>
+        </section>
+      )}
 
       {/* Dry-run result section */}
       {draft.dryRunResult != null && (

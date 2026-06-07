@@ -91,9 +91,15 @@ export function useDraftDryRun() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch<AiDraftResponse>(`/ai/drafts/${id}/dry-run`, token, { method: 'POST' }),
-    onSuccess: (_data, id) => {
+    mutationFn: ({ id, amount, currency }: { id: string; amount?: string; currency?: string }) =>
+      apiFetch<AiDraftResponse>(`/ai/drafts/${id}/dry-run`, token, {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: amount ? parseFloat(amount) : null,
+          currency: currency || null,
+        }),
+      }),
+    onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['ai-drafts', 'detail', id] });
     },
   });
