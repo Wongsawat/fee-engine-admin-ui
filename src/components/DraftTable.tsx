@@ -46,9 +46,9 @@ export function DraftTable({ drafts }: DraftTableProps) {
                   <TableCell>
                     <DraftStatusBadge status={draft.status} />
                   </TableCell>
-                  <TableCell>{paymentType ?? '—'}</TableCell>
-                  <TableCell>{feeType ?? '—'}</TableCell>
-                  <TableCell>{currency ?? '—'}</TableCell>
+                  <TableCell className="font-mono">{paymentType ?? '—'}</TableCell>
+                  <TableCell className="font-mono">{feeType ?? '—'}</TableCell>
+                  <TableCell className="font-mono">{currency ?? '—'}</TableCell>
                   <TableCell>{formatRelativeTime(draft.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" asChild>

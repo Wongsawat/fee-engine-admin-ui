@@ -46,14 +46,14 @@ export function RuleTable({ data, page, onPageChange }: RuleTableProps) {
             ) : (
               data.content.map((rule) => (
                 <TableRow key={rule.id}>
-                  <TableCell>{rule.paymentType}</TableCell>
-                  <TableCell>{rule.scheme}</TableCell>
-                  <TableCell>{rule.chargeBearer}</TableCell>
-                  <TableCell>{rule.feeType}</TableCell>
-                  <TableCell>{rule.currency}</TableCell>
-                  <TableCell>{rule.accountIdentification ?? '—'}</TableCell>
-                  <TableCell>{rule.destinationCountry ?? '—'}</TableCell>
-                  <TableCell>{rule.priority}</TableCell>
+                  <TableCell className="font-mono">{rule.paymentType}</TableCell>
+                  <TableCell className="font-mono">{rule.scheme}</TableCell>
+                  <TableCell className="font-mono">{rule.chargeBearer}</TableCell>
+                  <TableCell className="font-mono">{rule.feeType}</TableCell>
+                  <TableCell className="font-mono text-right">{rule.currency}</TableCell>
+                  <TableCell className="font-mono text-right">{rule.accountIdentification ?? '—'}</TableCell>
+                  <TableCell className="font-mono text-right">{rule.destinationCountry ?? '—'}</TableCell>
+                  <TableCell className="font-mono text-right">{rule.priority}</TableCell>
                   <TableCell><StatusBadge active={rule.active} /></TableCell>
                   <TableCell>{new Date(rule.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right space-x-1">

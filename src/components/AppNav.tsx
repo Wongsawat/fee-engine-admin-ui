@@ -9,17 +9,22 @@ const LINKS = [
 
 export function AppNav() {
   return (
-    <header className="border-b bg-background">
-      <nav className="mx-auto flex max-w-7xl items-center gap-1 px-4 py-3">
-        <span className="mr-6 font-semibold text-sm">Fee Engine Admin</span>
+    <header className="bg-sidebar text-sidebar-foreground">
+      <nav className="flex h-12 items-center px-4">
+        <div className="mr-6 flex items-center gap-2 shrink-0">
+          <img src="/logo-mark.svg" alt="" className="h-5 w-5" />
+          <span className="font-semibold text-sm text-white">Fee Engine Admin</span>
+        </div>
         {LINKS.map(({ to, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
               cn(
-                'rounded px-3 py-1.5 text-sm transition-colors hover:bg-accent',
-                isActive ? 'bg-accent font-medium' : 'text-muted-foreground'
+                'flex h-full items-center px-3 text-sm transition-colors',
+                isActive
+                  ? 'border-b-2 border-primary font-medium text-white'
+                  : 'text-sidebar-foreground/70 hover:text-white'
               )
             }
           >

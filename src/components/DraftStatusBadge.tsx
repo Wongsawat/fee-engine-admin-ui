@@ -1,21 +1,51 @@
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { DraftStatus } from '@/types/ai-draft';
 
-type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
-
-const CONFIG: Record<DraftStatus, { variant: BadgeVariant; label: string; className?: string }> = {
-  PENDING: { variant: 'outline', label: 'Pending', className: 'border-yellow-500 text-yellow-700' },
-  DRY_RUN_PASSED: { variant: 'default', label: 'Dry Run Passed', className: 'bg-green-600 hover:bg-green-700' },
-  DRY_RUN_FAILED: { variant: 'destructive', label: 'Dry Run Failed' },
-  APPROVED: { variant: 'secondary', label: 'Approved', className: 'bg-blue-100 text-blue-800' },
-  REJECTED: { variant: 'secondary', label: 'Rejected' },
+const CONFIG: Record<DraftStatus, { label: string; bg: string; text: string; dot: string }> = {
+  PENDING: {
+    label: 'Pending',
+    bg: 'bg-[#fdf6e3]',
+    text: 'text-[#92600f]',
+    dot: 'bg-[#b7791f]',
+  },
+  DRY_RUN_PASSED: {
+    label: 'Dry Run Passed',
+    bg: 'bg-[#e9f7ee]',
+    text: 'text-[#0f6b3a]',
+    dot: 'bg-[#16864a]',
+  },
+  DRY_RUN_FAILED: {
+    label: 'Dry Run Failed',
+    bg: 'bg-[#fdecec]',
+    text: 'text-[#a31f1c]',
+    dot: 'bg-[#c8332f]',
+  },
+  APPROVED: {
+    label: 'Approved',
+    bg: 'bg-[#eef4fe]',
+    text: 'text-[#163f8c]',
+    dot: 'bg-[#1d5fd6]',
+  },
+  REJECTED: {
+    label: 'Rejected',
+    bg: 'bg-[#eef2f7]',
+    text: 'text-[#64748b]',
+    dot: 'bg-[#94a3b8]',
+  },
 };
 
 export function DraftStatusBadge({ status }: { status: DraftStatus }) {
-  const { variant, label, className } = CONFIG[status];
+  const { label, bg, text, dot } = CONFIG[status];
   return (
-    <Badge variant={variant} className={className}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium',
+        bg,
+        text
+      )}
+    >
+      <span className={cn('inline-block h-1.5 w-1.5 rounded-full', dot)} />
       {label}
-    </Badge>
+    </span>
   );
 }
