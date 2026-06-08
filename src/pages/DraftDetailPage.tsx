@@ -219,7 +219,17 @@ export function DraftDetailPage() {
         ) : (
           <pre className="rounded-md bg-muted p-4 text-xs overflow-auto">
             {draft.ruleJson
-              ? JSON.stringify(draft.ruleJson, null, 2)
+              ? JSON.stringify(draft.ruleJson, (_, value) => {
+                  if (Array.isArray(value)) {
+                    return value.map((item) => {
+                      if (item && typeof item === 'object' && 'min' in item && 'max' in item && 'amount' in item) {
+                        return { min: item.min, max: item.max, amount: item.amount };
+                      }
+                      return item;
+                    });
+                  }
+                  return value;
+                }, 2)
               : 'No rule data.'}
           </pre>
         )}
