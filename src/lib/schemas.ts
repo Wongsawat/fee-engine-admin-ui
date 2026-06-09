@@ -16,16 +16,58 @@ export const CHARGE_BEARERS = [
   'BorneByDebtor', 'BorneByCreditor', 'Shared', 'FollowingServiceLevel',
 ] as const;
 
-export const FEE_TYPES = ['FLAT', 'PERCENTAGE', 'TIERED', 'FREE'] as const;
+export const FEE_TYPES = ['FLAT', 'PERCENTAGE', 'TIERED_SLAB', 'TIERED_STEP', 'FREE'] as const;
+
+export const TIER_RATE_TYPES = ['FIXED', 'PERCENTAGE', 'HYBRID', 'GREATER_OF'] as const;
+
+export const isTieredFeeType = (ft: string | undefined): boolean =>
+  ft === 'TIERED_SLAB' || ft === 'TIERED_STEP';
 
 export const tierSchema = z.object({
   min: z.string().min(1, 'Required'),
   max: z.string().min(1, 'Required'),
-  amount: z.string().min(1, 'Required'),
-}).refine(
-  (t) => Number(t.max) > Number(t.min),
-  { message: 'Max must be greater than min', path: ['max'] }
-);
+  rateType: z.enum(TIER_RATE_TYPES, { message: 'Required' }),
+  amount: z.string().optional(),
+  percentage: z.string().optional(),
+}).superRefine((t, ctx) => {
+  if (Number(t.max) <= Number(t.min)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Max must be greater than min',
+      path: ['max'],
+    });
+  }
+  if (t.amount && Number(t.amount) <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Must be greater than 0',
+      path: ['amount'],
+    });
+  }
+  if (t.percentage && (Number(t.percentage) <= 0 || Number(t.percentage) > 1)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Must be > 0 and ≤ 1 (e.g. 0.03 for 3%)',
+      path: ['percentage'],
+    });
+  }
+  if (t.rateType === 'FIXED') {
+    if (!t.amount) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Required for FIXED', path: ['amount'] });
+    }
+  } else if (t.rateType === 'PERCENTAGE') {
+    if (!t.percentage) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Required for PERCENTAGE', path: ['percentage'] });
+    }
+  } else if (t.rateType === 'HYBRID' || t.rateType === 'GREATER_OF') {
+    if (!t.amount) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Required', path: ['amount'] });
+    }
+    if (!t.percentage) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Required', path: ['percentage'] });
+    }
+  }
+});
 
 export const ruleFormSchema = z.object({
   paymentType: z.enum(PAYMENT_TYPES, { message: 'Required' }),
@@ -61,7 +103,7 @@ export const ruleFormSchema = z.object({
       path: ['percentage'],
     });
   }
-  if (data.feeType === 'TIERED' && (!data.tiers || data.tiers.length === 0)) {
+  if (isTieredFeeType(data.feeType) && (!data.tiers || data.tiers.length === 0)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'At least one tier is required for TIERED fee type',
