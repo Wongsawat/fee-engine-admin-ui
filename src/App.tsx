@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import wpantherLogo from './assets/wpanther-logo.png';
 import { AppNav } from './components/AppNav';
 import { AuthGuard } from './auth/AuthGuard';
 import { ErrorToast } from './components/ErrorToast';
@@ -15,7 +16,7 @@ export function App() {
       <ErrorToast />
       <div className="relative min-h-screen bg-background">
         <img
-          src="/wpanther-logo.png"
+          src={wpantherLogo}
           aria-hidden="true"
           className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-50 select-none"
         />
