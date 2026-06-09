@@ -64,7 +64,7 @@ export function ruleJsonToFormValues(ruleJson: unknown): Partial<RuleFormValues>
       ? r.tiers.map((t: Record<string, unknown>) => ({
           min: String(t.min),
           max: String(t.max),
-          rateType: (t.rateType as string | undefined) ?? 'FIXED',
+          rateType: (t.rateType as 'FIXED' | 'PERCENTAGE' | 'HYBRID' | 'GREATER_OF' | undefined) ?? 'FIXED',
           amount: t.amount != null ? String(t.amount) : undefined,
           percentage: t.percentage != null ? String(t.percentage) : undefined,
         }))
