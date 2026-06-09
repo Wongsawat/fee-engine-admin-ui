@@ -60,7 +60,11 @@ export function RuleFormPage() {
         minFee: existing.minFee != null ? String(existing.minFee) : '',
         maxFee: existing.maxFee != null ? String(existing.maxFee) : '',
         tiers: existing.tiers?.map((t) => ({
-          min: String(t.min), max: String(t.max), amount: String(t.amount),
+          min: String(t.min),
+          max: String(t.max),
+          rateType: t.rateType ?? 'FIXED',
+          amount: t.amount != null ? String(t.amount) : undefined,
+          percentage: t.percentage != null ? String(t.percentage) : undefined,
         })) ?? [],
         currency: existing.currency,
         destinationCountry: existing.destinationCountry ?? '',
