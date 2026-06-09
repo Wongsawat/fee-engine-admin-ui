@@ -15,12 +15,16 @@ export type ChargeBearer =
   | 'Shared'
   | 'FollowingServiceLevel';
 
-export type FeeType = 'FLAT' | 'PERCENTAGE' | 'TIERED' | 'FREE';
+export type TierRateType = 'FIXED' | 'PERCENTAGE' | 'HYBRID' | 'GREATER_OF';
+
+export type FeeType = 'FLAT' | 'PERCENTAGE' | 'TIERED_SLAB' | 'TIERED_STEP' | 'FREE';
 
 export interface Tier {
   min: number;
   max: number;
-  amount: number;
+  rateType: TierRateType;
+  amount?: number;
+  percentage?: number;
 }
 
 export interface FeeRuleResponse {
