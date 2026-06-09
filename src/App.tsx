@@ -18,7 +18,7 @@ export function App() {
         <img
           src={wpantherLogo}
           aria-hidden="true"
-          className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 select-none"
+          className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 select-none"
         />
         <AppNav />
         <main>
