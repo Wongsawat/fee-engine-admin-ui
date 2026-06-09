@@ -20,7 +20,9 @@ export function toApiRuleRequest(rule: RuleFormValues): CreateFeeRuleRequest {
     tiers: rule.tiers?.map((t): Tier => ({
       min: parseFloat(t.min),
       max: parseFloat(t.max),
-      amount: parseFloat(t.amount),
+      rateType: t.rateType,
+      ...(t.rateType !== 'PERCENTAGE' && t.amount ? { amount: parseFloat(t.amount) } : {}),
+      ...(t.rateType !== 'FIXED' && t.percentage ? { percentage: parseFloat(t.percentage) } : {}),
     })),
     currency: rule.currency,
     destinationCountry: rule.destinationCountry || undefined,
