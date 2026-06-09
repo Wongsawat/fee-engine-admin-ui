@@ -13,7 +13,12 @@ export function App() {
   return (
     <AuthGuard>
       <ErrorToast />
-      <div className="min-h-screen bg-background">
+      <div className="relative min-h-screen bg-background">
+        <img
+          src="/wpanther-logo.png"
+          aria-hidden="true"
+          className="pointer-events-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 select-none"
+        />
         <AppNav />
         <main>
           <Routes>
