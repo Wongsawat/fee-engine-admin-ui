@@ -15,9 +15,6 @@ export function AppNav() {
           <img src="/logo-mark.svg" alt="" className="h-5 w-5" />
           <span className="font-semibold text-sm text-white">Fee Engine Admin</span>
         </div>
-        <div className="ml-auto shrink-0">
-          <img src="/wpanther-logo.png" alt="wpanther" className="h-8 w-8 rounded-full object-cover" />
-        </div>
         {LINKS.map(({ to, label }) => (
           <NavLink
             key={to}
