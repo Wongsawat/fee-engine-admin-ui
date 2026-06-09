@@ -5,7 +5,7 @@ React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Br
 ## Features
 
 - **Rule list** with filtering (payment type, scheme, charge bearer, fee type, currency, account identification, destination country, active state) and pagination.
-- **Rule create/edit** with full client-side validation. Conditional fields per `feeType`: `FLAT` requires `flatAmount`, `PERCENTAGE` requires `percentage` (plus optional `minFee`/`maxFee` caps), `TIERED` requires tiers, `FREE` permits none of these.
+- **Rule create/edit** with full client-side validation. Conditional fields per `feeType`: `FLAT` requires `flatAmount`, `PERCENTAGE` requires `percentage` (plus optional `minFee`/`maxFee` caps), `TIERED_SLAB`/`TIERED_STEP` require tiers with per-tier `rateType` (FIXED, PERCENTAGE, HYBRID, GREATER_OF), `FREE` permits none of these.
 - **Fee caps (V5)** — `minFee`/`maxFee` bounds on `PERCENTAGE` rules.
 - **Corridor matching (V6)** — `destinationCountry` (ISO 3166-1 alpha-2) on international payment types only.
 - **Priority ordering (V7)** — explicit non-negative `priority` integer (default 0) for rule selection.
@@ -93,7 +93,7 @@ Enforced by `ruleFormSchema.superRefine` in `src/lib/schemas.ts`:
 
 - `FLAT` → `flatAmount` required.
 - `PERCENTAGE` → `percentage` required; `minFee`/`maxFee` optional; `minFee ≤ maxFee` and both `> 0`.
-- `TIERED` → at least one tier required; each tier's `max > min`.
+- `TIERED_SLAB` / `TIERED_STEP` → at least one tier required; each tier's `max > min` and `rateType` present (FIXED, PERCENTAGE, HYBRID, GREATER_OF); `amount`/`percentage` required per `rateType`.
 - `FREE` → none of `flatAmount`, `percentage`, `tiers` may be set.
 - `destinationCountry` → only on `INTERNATIONAL`, `INTERNATIONAL_SCHEDULED`, `INTERNATIONAL_STANDING_ORDER`; must match `^[A-Z]{2}$`.
 
