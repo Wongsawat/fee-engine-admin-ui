@@ -27,10 +27,11 @@ function Harness({ onSubmit = vi.fn() }: { onSubmit?: (data: unknown) => void })
 }
 
 async function selectRateType(value: string) {
+  const user = userEvent.setup();
   const trigger = screen.getByRole('combobox', { name: /rate type/i });
-  await userEvent.click(trigger);
+  await user.click(trigger);
   const option = await screen.findByRole('option', { name: value });
-  await userEvent.click(option);
+  await user.click(option);
 }
 
 describe('TierEditor', () => {

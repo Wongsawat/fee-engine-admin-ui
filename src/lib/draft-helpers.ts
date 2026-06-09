@@ -1,5 +1,5 @@
 import type { DraftStatus, GenerateDraftRequest } from '@/types/ai-draft';
-import type { PromptFormValues } from '@/lib/schemas';
+import type { PromptFormValues, RuleFormValues } from '@/lib/schemas';
 
 export function canDryRun(status: DraftStatus): boolean {
   return status === 'PENDING' || status === 'DRY_RUN_FAILED';
@@ -44,6 +44,35 @@ export function toGenerateRequest(v: PromptFormValues): GenerateDraftRequest {
     return { prompt: v.prompt, type: 'UPDATE', targetRuleId: v.targetRuleId };
   }
   return { prompt: v.prompt, type: 'GENERATE' };
+}
+
+export function ruleJsonToFormValues(ruleJson: unknown): Partial<RuleFormValues> {
+  if (!ruleJson || typeof ruleJson !== 'object') return {};
+  const r = ruleJson as Record<string, unknown>;
+  return {
+    paymentType: r.paymentType as RuleFormValues['paymentType'],
+    scheme: r.scheme as RuleFormValues['scheme'],
+    chargeBearer: r.chargeBearer as RuleFormValues['chargeBearer'],
+    accountIdentification: typeof r.accountIdentification === 'string' ? r.accountIdentification : undefined,
+    chargeType: typeof r.chargeType === 'string' ? r.chargeType : '',
+    feeType: r.feeType as RuleFormValues['feeType'],
+    flatAmount: r.flatAmount != null ? String(r.flatAmount) : undefined,
+    percentage: r.percentage != null ? String(r.percentage) : undefined,
+    minFee: r.minFee != null ? String(r.minFee) : undefined,
+    maxFee: r.maxFee != null ? String(r.maxFee) : undefined,
+    tiers: Array.isArray(r.tiers)
+      ? r.tiers.map((t: Record<string, unknown>) => ({
+          min: String(t.min),
+          max: String(t.max),
+          rateType: (t.rateType as string | undefined) ?? 'FIXED',
+          amount: t.amount != null ? String(t.amount) : undefined,
+          percentage: t.percentage != null ? String(t.percentage) : undefined,
+        }))
+      : [],
+    currency: typeof r.currency === 'string' ? r.currency : '',
+    destinationCountry: typeof r.destinationCountry === 'string' ? r.destinationCountry : undefined,
+    priority: typeof r.priority === 'number' ? r.priority : undefined,
+  };
 }
 
 /** Normalises key order for tier display; items without a `rateType` field (legacy data) pass through unchanged. */

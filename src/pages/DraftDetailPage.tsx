@@ -14,7 +14,7 @@ import {
   useAiDraft, useUpdateDraft, useDraftDryRun,
   useApproveDraft, useRejectDraft, useDeleteDraft,
 } from '@/api/ai-drafts';
-import { canDryRun, canApprove, canReject, canDelete, canEdit, normalizeTierKeyOrder } from '@/lib/draft-helpers';
+import { canDryRun, canApprove, canReject, canDelete, canEdit, normalizeTierKeyOrder, ruleJsonToFormValues } from '@/lib/draft-helpers';
 import { formatRelativeTime } from '@/lib/format';
 import { ApiError } from '@/api/client';
 import { Input } from '@/components/ui/input';
@@ -27,34 +27,6 @@ function extractIdFromPath(pathname: string): string | undefined {
   return segments[idx + 1];
 }
 
-function ruleJsonToFormValues(ruleJson: unknown): Partial<RuleFormValues> {
-  if (!ruleJson || typeof ruleJson !== 'object') return {};
-  const r = ruleJson as Record<string, unknown>;
-  return {
-    paymentType: r.paymentType as RuleFormValues['paymentType'],
-    scheme: r.scheme as RuleFormValues['scheme'],
-    chargeBearer: r.chargeBearer as RuleFormValues['chargeBearer'],
-    accountIdentification: typeof r.accountIdentification === 'string' ? r.accountIdentification : undefined,
-    chargeType: typeof r.chargeType === 'string' ? r.chargeType : '',
-    feeType: r.feeType as RuleFormValues['feeType'],
-    flatAmount: r.flatAmount != null ? String(r.flatAmount) : undefined,
-    percentage: r.percentage != null ? String(r.percentage) : undefined,
-    minFee: r.minFee != null ? String(r.minFee) : undefined,
-    maxFee: r.maxFee != null ? String(r.maxFee) : undefined,
-    tiers: Array.isArray(r.tiers)
-      ? r.tiers.map((t: Record<string, unknown>) => ({
-          min: String(t.min),
-          max: String(t.max),
-          rateType: (t.rateType as string | undefined) ?? 'FIXED',
-          amount: t.amount != null ? String(t.amount) : undefined,
-          percentage: t.percentage != null ? String(t.percentage) : undefined,
-        }))
-      : [],
-    currency: typeof r.currency === 'string' ? r.currency : '',
-    destinationCountry: typeof r.destinationCountry === 'string' ? r.destinationCountry : undefined,
-    priority: typeof r.priority === 'number' ? r.priority : undefined,
-  };
-}
 
 export function DraftDetailPage() {
   const location = useLocation();

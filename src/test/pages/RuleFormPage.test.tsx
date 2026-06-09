@@ -89,4 +89,26 @@ describe('RuleFormPage — edit mode', () => {
       expect(screen.getByDisplayValue('7')).toBeInTheDocument();
     });
   });
+
+  it('pre-populates tier fields for TIERED_SLAB rule', async () => {
+    server.use(
+      http.get(`/admin/fee-rules/${MOCK_RULE.id}`, () =>
+        HttpResponse.json({
+          ...MOCK_RULE,
+          feeType: 'TIERED_SLAB',
+          flatAmount: undefined,
+          tiers: [{ min: 0, max: 10000, rateType: 'FIXED', amount: 5 }],
+        })
+      )
+    );
+    renderWithProviders(<RulesWrapped />, {
+      initialEntries: [`/rules/${MOCK_RULE.id}`],
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^min$/i)).toHaveValue('0');
+      expect(screen.getByLabelText(/^max$/i)).toHaveValue('10000');
+      expect(screen.getByLabelText(/^amount$/i)).toHaveValue('5');
+    });
+    expect(screen.getByRole('combobox', { name: /rate type/i })).toBeInTheDocument();
+  });
 });

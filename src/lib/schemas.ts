@@ -106,7 +106,7 @@ export const ruleFormSchema = z.object({
   if (isTieredFeeType(data.feeType) && (!data.tiers || data.tiers.length === 0)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'At least one tier is required for TIERED fee type',
+      message: 'At least one tier is required for TIERED_SLAB / TIERED_STEP',
       path: ['tiers'],
     });
   }

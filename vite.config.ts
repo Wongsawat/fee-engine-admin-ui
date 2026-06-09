@@ -30,6 +30,6 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
     include: ['src/**/*.test.{ts,tsx}'],
-    testTimeout: 15000,
+    testTimeout: 15000, // React 19 + Radix Select interactions are slower in full-suite runs
   },
 })
