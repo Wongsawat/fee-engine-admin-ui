@@ -17,6 +17,7 @@ interface TierEditorProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: Control<Record<string, any>>;
   name: string;
+  feeType?: string;
 }
 
 interface TierRowProps {
@@ -142,11 +143,20 @@ function TierRow({ control, name, index, onRemove }: TierRowProps) {
   );
 }
 
-export function TierEditor({ control, name }: TierEditorProps) {
+export function TierEditor({ control, name, feeType }: TierEditorProps) {
   const { fields, append, remove } = useFieldArray({ control, name });
 
   return (
     <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Boundaries are <strong>whole numbers</strong>. Adjacent tiers must share the same
+        boundary value — set the previous tier&apos;s Max equal to the next tier&apos;s Min
+        (e.g. 0 / 1000, 1000 / 10000).{' '}
+        {feeType === 'TIERED_STEP'
+          ? 'A tier fires when amount > Min (strictly greater than), so an amount equal to a boundary belongs to the lower tier.'
+          : 'The matched tier is the first one where Min < amount ≤ Max.'}{' '}
+        Set the last tier&apos;s Max to <strong>999999999</strong> to cover all larger amounts.
+      </p>
       {fields.map((field, index) => (
         <TierRow
           key={field.id}

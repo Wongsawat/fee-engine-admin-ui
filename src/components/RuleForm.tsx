@@ -282,11 +282,31 @@ export function RuleForm({
           </>
         )}
 
+        {feeType === 'TIERED_SLAB' && (
+          <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+            <strong className="text-foreground">Slab fee</strong> — the full payment amount falls
+            into exactly <em>one</em> bracket (the first where Min &lt; amount &le; Max) and that
+            bracket&apos;s formula applies to the <em>entire</em> amount.
+          </div>
+        )}
+
+        {feeType === 'TIERED_STEP' && (
+          <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+            <strong className="text-foreground">Step (progressive) fee</strong> — every bracket
+            where amount &gt; Min fires. Each bracket&apos;s formula applies only to the{' '}
+            <em>portion</em> of the amount within that bracket, and the results are summed — like a
+            progressive income tax.{' '}
+            <strong className="text-foreground">Boundary rule:</strong> a tier fires only when
+            amount is <em>strictly greater than</em> its Min, so an amount of exactly 1,000 with
+            brackets [0 – 1,000] and [1,000 – 10,000] is charged only by the first bracket.
+          </div>
+        )}
+
         {isTieredFeeType(feeType) && (
           <FormItem>
             <FormLabel>Tiers</FormLabel>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <TierEditor control={form.control as any} name="tiers" />
+            <TierEditor control={form.control as any} name="tiers" feeType={feeType} />
             <FormMessage />
           </FormItem>
         )}
