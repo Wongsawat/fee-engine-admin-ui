@@ -16,6 +16,7 @@ import {
   ruleFormSchema,
   PAYMENT_TYPES, PAYMENT_SCHEMES, FEE_TYPES,
   INTERNATIONAL_PAYMENT_TYPES,
+  isTieredFeeType,
   type DryRunFormValues,
 } from '@/lib/schemas';
 import { useDryRun } from '@/api/dry-run';
@@ -263,7 +264,7 @@ export function DryRunPage() {
                 </>
               )}
 
-              {feeType === 'TIERED' && (
+              {isTieredFeeType(feeType) && (
                 <FormItem>
                   <FormLabel>Tiers</FormLabel>
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
