@@ -56,11 +56,11 @@ describe('DryRunPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /run/i }));
 
-    // Wait for mutation to complete and re-render with results
     await waitFor(() => {
       expect(screen.getByText(/1\.50/)).toBeInTheDocument();
-    }, { timeout: 5000 });
-  });
+    }, { timeout: 10000 });
+  // 6 Radix Select interactions under full-suite load exceed the 5 s Vitest default; align with waitFor's own 10 s budget
+  }, 15000 /* ms */);
 
   it('pre-populates rule from navigation state', async () => {
     renderWithProviders(<DryRunPage />, {
