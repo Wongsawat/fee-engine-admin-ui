@@ -2,7 +2,7 @@ import type { DraftStatus, GenerateDraftRequest } from '@/types/ai-draft';
 import type { PromptFormValues, RuleFormValues } from '@/lib/schemas';
 
 export function canDryRun(status: DraftStatus): boolean {
-  return status === 'PENDING' || status === 'DRY_RUN_FAILED';
+  return status === 'PENDING' || status === 'DRY_RUN_FAILED' || status === 'DRY_RUN_PASSED';
 }
 
 export function canApprove(status: DraftStatus): boolean {
