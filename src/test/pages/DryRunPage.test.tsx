@@ -30,37 +30,37 @@ describe('DryRunPage', () => {
   });
 
   it('submits dry-run and renders charge results', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
 
     // Fill rule form
-    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'DOMESTIC' }));
+    await user.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await user.click(screen.getByRole('option', { name: 'DOMESTIC' }));
 
-    await userEvent.click(screen.getByRole('combobox', { name: /^scheme$/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'FPS' }));
+    await user.click(screen.getByRole('combobox', { name: /^scheme$/i }));
+    await user.click(screen.getByRole('option', { name: 'FPS' }));
 
-    await userEvent.click(screen.getByRole('combobox', { name: /charge bearer/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'BorneByDebtor' }));
+    await user.click(screen.getByRole('combobox', { name: /charge bearer/i }));
+    await user.click(screen.getByRole('option', { name: 'BorneByDebtor' }));
 
-    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await user.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
 
-    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'FLAT' }));
+    await user.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await user.click(screen.getByRole('option', { name: 'FLAT' }));
 
-    await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
-    await userEvent.type(screen.getByLabelText(/^currency$/i), 'GBP');
+    await user.type(screen.getByLabelText(/flat amount/i), '1.50');
+    await user.type(screen.getByLabelText(/^currency$/i), 'GBP');
 
     // Fill payment context
-    await userEvent.type(screen.getByLabelText(/instructed amount/i), '100.00');
-    await userEvent.type(screen.getByLabelText(/amount currency/i), 'GBP');
+    await user.type(screen.getByLabelText(/instructed amount/i), '100.00');
+    await user.type(screen.getByLabelText(/amount currency/i), 'GBP');
 
-    await userEvent.click(screen.getByRole('button', { name: /run/i }));
+    await user.click(screen.getByRole('button', { name: /run/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/1\.50/)).toBeInTheDocument();
-    }, { timeout: 10000 });
-  // 6 Radix Select interactions under full-suite load exceed the 5 s Vitest default; align with waitFor's own 10 s budget
-  }, 15000 /* ms */);
+    });
+  });
 
   it('pre-populates rule from navigation state', async () => {
     renderWithProviders(<DryRunPage />, {
@@ -79,32 +79,36 @@ describe('DryRunPage', () => {
   });
 
   it('does not show destination country field for DOMESTIC payment type', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
-    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'DOMESTIC' }));
+    await user.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await user.click(screen.getByRole('option', { name: 'DOMESTIC' }));
     expect(screen.queryByLabelText(/destination country/i)).not.toBeInTheDocument();
   });
 
   it('shows destination country field for INTERNATIONAL payment type', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
-    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'INTERNATIONAL' }));
+    await user.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await user.click(screen.getByRole('option', { name: 'INTERNATIONAL' }));
     expect(screen.getByLabelText(/destination country/i)).toBeInTheDocument();
   });
 
   it('does not show fee bounds section for FLAT fee type', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
-    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'FLAT' }));
+    await user.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await user.click(screen.getByRole('option', { name: 'FLAT' }));
     expect(screen.queryByText(/fee bounds/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/min fee/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/max fee/i)).not.toBeInTheDocument();
   });
 
   it('shows fee bounds section for PERCENTAGE fee type', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<DryRunPage />, { initialEntries: ['/dry-run'] });
-    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'PERCENTAGE' }));
+    await user.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await user.click(screen.getByRole('option', { name: 'PERCENTAGE' }));
     expect(screen.getByText(/fee bounds/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/min fee/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/max fee/i)).toBeInTheDocument();

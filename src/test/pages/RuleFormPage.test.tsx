@@ -28,27 +28,27 @@ describe('RuleFormPage — create mode', () => {
   });
 
   it('submits POST and navigates to /rules on success', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<RulesWrapped />, { initialEntries: ['/rules/new'] });
 
-    // Fill form using Radix Select click pattern
-    await userEvent.click(screen.getByRole('combobox', { name: /payment type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'DOMESTIC' }));
+    await user.click(screen.getByRole('combobox', { name: /payment type/i }));
+    await user.click(screen.getByRole('option', { name: 'DOMESTIC' }));
 
-    await userEvent.click(screen.getByRole('combobox', { name: /scheme/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'FPS' }));
+    await user.click(screen.getByRole('combobox', { name: /scheme/i }));
+    await user.click(screen.getByRole('option', { name: 'FPS' }));
 
-    await userEvent.click(screen.getByRole('combobox', { name: /charge bearer/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'BorneByDebtor' }));
+    await user.click(screen.getByRole('combobox', { name: /charge bearer/i }));
+    await user.click(screen.getByRole('option', { name: 'BorneByDebtor' }));
 
-    await userEvent.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
+    await user.type(screen.getByLabelText(/charge type/i), 'ServiceCharge');
 
-    await userEvent.click(screen.getByRole('combobox', { name: /fee type/i }));
-    await userEvent.click(screen.getByRole('option', { name: 'FLAT' }));
+    await user.click(screen.getByRole('combobox', { name: /fee type/i }));
+    await user.click(screen.getByRole('option', { name: 'FLAT' }));
 
-    await userEvent.type(screen.getByLabelText(/flat amount/i), '1.50');
-    await userEvent.type(screen.getByLabelText(/currency/i), 'GBP');
+    await user.type(screen.getByLabelText(/flat amount/i), '1.50');
+    await user.type(screen.getByLabelText(/currency/i), 'GBP');
 
-    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await user.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
       // After successful POST, the page navigates to /rules
