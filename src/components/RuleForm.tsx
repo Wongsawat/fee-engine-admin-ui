@@ -12,7 +12,7 @@ import {
 import { TierEditor } from './TierEditor';
 import {
   ruleFormSchema, PAYMENT_TYPES, PAYMENT_SCHEMES, CHARGE_BEARERS, FEE_TYPES,
-  INTERNATIONAL_PAYMENT_TYPES,
+  INTERNATIONAL_PAYMENT_TYPES, isTieredFeeType,
   type RuleFormValues,
 } from '@/lib/schemas';
 
@@ -282,7 +282,7 @@ export function RuleForm({
           </>
         )}
 
-        {feeType === 'TIERED' && (
+        {isTieredFeeType(feeType) && (
           <FormItem>
             <FormLabel>Tiers</FormLabel>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

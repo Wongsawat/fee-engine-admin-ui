@@ -42,9 +42,15 @@ describe('RuleForm validation', () => {
     expect(screen.queryByLabelText(/flat amount/i)).not.toBeInTheDocument();
   });
 
-  it('shows TierEditor only when feeType is TIERED', async () => {
+  it('shows TierEditor only when feeType is TIERED_SLAB', async () => {
     renderWithProviders(<RuleForm onSubmit={noop} />);
-    await selectOption(/fee type/i, 'TIERED');
+    await selectOption(/fee type/i, 'TIERED_SLAB');
+    expect(screen.getByRole('button', { name: /add tier/i })).toBeInTheDocument();
+  });
+
+  it('shows TierEditor only when feeType is TIERED_STEP', async () => {
+    renderWithProviders(<RuleForm onSubmit={noop} />);
+    await selectOption(/fee type/i, 'TIERED_STEP');
     expect(screen.getByRole('button', { name: /add tier/i })).toBeInTheDocument();
   });
 
@@ -57,11 +63,12 @@ describe('RuleForm validation', () => {
 
   it('shows error when tier max is not greater than min', async () => {
     renderWithProviders(<RuleForm onSubmit={noop} />);
-    await selectOption(/fee type/i, 'TIERED');
+    await selectOption(/fee type/i, 'TIERED_SLAB');
     fireEvent.click(screen.getByRole('button', { name: /add tier/i }));
-    await userEvent.type(screen.getByPlaceholderText('Min'), '100');
-    await userEvent.type(screen.getByPlaceholderText('Max'), '50');
-    await userEvent.type(screen.getByPlaceholderText('Amount'), '1.00');
+    // Rate Type defaults to FIXED — Amount is visible
+    await userEvent.type(screen.getByLabelText(/^min$/i), '100');
+    await userEvent.type(screen.getByLabelText(/^max$/i), '50');
+    await userEvent.type(screen.getByLabelText(/^amount$/i), '1.00');
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
     await waitFor(() => {
       expect(screen.getByText('Max must be greater than min')).toBeInTheDocument();
