@@ -45,3 +45,20 @@ export function toGenerateRequest(v: PromptFormValues): GenerateDraftRequest {
   }
   return { prompt: v.prompt, type: 'GENERATE' };
 }
+
+/** Normalises key order for tier display; items without a `rateType` field (legacy data) pass through unchanged. */
+export function normalizeTierKeyOrder(tiers: unknown[]): unknown[] {
+  return tiers.map((item) => {
+    if (item && typeof item === 'object' && 'min' in item && 'max' in item && 'rateType' in item) {
+      const t = item as Record<string, unknown>;
+      return {
+        min: t.min,
+        max: t.max,
+        rateType: t.rateType,
+        ...(t.amount != null && { amount: t.amount }),
+        ...(t.percentage != null && { percentage: t.percentage }),
+      };
+    }
+    return item;
+  });
+}

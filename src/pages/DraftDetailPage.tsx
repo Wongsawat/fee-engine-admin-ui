@@ -14,7 +14,7 @@ import {
   useAiDraft, useUpdateDraft, useDraftDryRun,
   useApproveDraft, useRejectDraft, useDeleteDraft,
 } from '@/api/ai-drafts';
-import { canDryRun, canApprove, canReject, canDelete, canEdit } from '@/lib/draft-helpers';
+import { canDryRun, canApprove, canReject, canDelete, canEdit, normalizeTierKeyOrder } from '@/lib/draft-helpers';
 import { formatRelativeTime } from '@/lib/format';
 import { ApiError } from '@/api/client';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,11 @@ function ruleJsonToFormValues(ruleJson: unknown): Partial<RuleFormValues> {
     maxFee: r.maxFee != null ? String(r.maxFee) : undefined,
     tiers: Array.isArray(r.tiers)
       ? r.tiers.map((t: Record<string, unknown>) => ({
-          min: String(t.min), max: String(t.max), amount: String(t.amount),
+          min: String(t.min),
+          max: String(t.max),
+          rateType: (t.rateType as string | undefined) ?? 'FIXED',
+          amount: t.amount != null ? String(t.amount) : undefined,
+          percentage: t.percentage != null ? String(t.percentage) : undefined,
         }))
       : [],
     currency: typeof r.currency === 'string' ? r.currency : '',
@@ -221,12 +225,7 @@ export function DraftDetailPage() {
             {draft.ruleJson
               ? JSON.stringify(draft.ruleJson, (_, value) => {
                   if (Array.isArray(value)) {
-                    return value.map((item) => {
-                      if (item && typeof item === 'object' && 'min' in item && 'max' in item && 'amount' in item) {
-                        return { min: item.min, max: item.max, amount: item.amount };
-                      }
-                      return item;
-                    });
+                    return normalizeTierKeyOrder(value);
                   }
                   return value;
                 }, 2)

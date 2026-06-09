@@ -1,6 +1,6 @@
 import {
   canDryRun, canApprove, canReject, canDelete, canEdit, isTerminal,
-  extractRuleSummary, toGenerateRequest,
+  extractRuleSummary, toGenerateRequest, normalizeTierKeyOrder,
 } from '@/lib/draft-helpers';
 import type { DraftStatus } from '@/types/ai-draft';
 import type { PromptFormValues } from '@/lib/schemas';
@@ -74,5 +74,34 @@ describe('toGenerateRequest', () => {
   it('maps UPDATE mode with targetRuleId', () => {
     const v: PromptFormValues = { mode: 'UPDATE', prompt: 'change the fee', targetRuleId: 'rule-123' };
     expect(toGenerateRequest(v)).toEqual({ prompt: 'change the fee', type: 'UPDATE', targetRuleId: 'rule-123' });
+  });
+});
+
+describe('normalizeTierKeyOrder', () => {
+  it('FIXED tier: emits min, max, rateType, amount (no percentage)', () => {
+    const result = normalizeTierKeyOrder([{ min: 0, max: 10000, rateType: 'FIXED', amount: 5.00 }]);
+    expect(result[0]).toEqual({ min: 0, max: 10000, rateType: 'FIXED', amount: 5.00 });
+    expect(result[0]).not.toHaveProperty('percentage');
+  });
+
+  it('PERCENTAGE tier: emits min, max, rateType, percentage (no amount)', () => {
+    const result = normalizeTierKeyOrder([{ min: 0, max: 10000, rateType: 'PERCENTAGE', percentage: 0.03 }]);
+    expect(result[0]).toEqual({ min: 0, max: 10000, rateType: 'PERCENTAGE', percentage: 0.03 });
+    expect(result[0]).not.toHaveProperty('amount');
+  });
+
+  it('HYBRID tier: emits min, max, rateType, amount, percentage', () => {
+    const result = normalizeTierKeyOrder([{ min: 0, max: 10000, rateType: 'HYBRID', amount: 2.00, percentage: 0.03 }]);
+    expect(result[0]).toEqual({ min: 0, max: 10000, rateType: 'HYBRID', amount: 2.00, percentage: 0.03 });
+  });
+
+  it('normalises key order regardless of input key order', () => {
+    const result = normalizeTierKeyOrder([{ percentage: 0.03, rateType: 'PERCENTAGE', max: 10000, min: 0 }]);
+    expect(Object.keys(result[0] as object)).toEqual(['min', 'max', 'rateType', 'percentage']);
+  });
+
+  it('passes non-tier items through unchanged', () => {
+    const result = normalizeTierKeyOrder([{ foo: 'bar' }]);
+    expect(result[0]).toEqual({ foo: 'bar' });
   });
 });
