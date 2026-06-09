@@ -18,6 +18,7 @@ function Harness({ onSubmit = vi.fn() }: { onSubmit?: (data: unknown) => void })
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <TierEditor control={form.control as Control<Record<string, any>>} name="tiers" />
         <button type="submit">Submit</button>
       </form>
