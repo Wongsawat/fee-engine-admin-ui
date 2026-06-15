@@ -1,6 +1,6 @@
 # Fee Engine Admin UI
 
-React + TypeScript admin console for the [fee-engine](../fee-engine) backend. Browse, create, edit, and dry-run fee rules; manage caps, corridor matching, and priority ordering. Generate, review, and approve AI-drafted rules.
+React + TypeScript admin console for the [fee-engine](https://github.com/Wongsawat/fee-engine) backend. Browse, create, edit, and dry-run fee rules; manage caps, corridor matching, and priority ordering. Generate, review, and approve AI-drafted rules.
 
 ## Features
 
